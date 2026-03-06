@@ -88,7 +88,7 @@ export function SpotPhotoBubbles({
             </motion.div>
 
             {/* 写真0枚フォールバック */}
-            {photos.length === 0 && (
+            {photos.length === 0 ? (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -104,10 +104,9 @@ export function SpotPhotoBubbles({
                 >
                     写真なし
                 </motion.div>
-            )}
+            ) : null}
 
             {/* 写真バブル */}
-            {positioned.length > 0 && console.log("[SpotPhotoBubbles] photo[0]:", JSON.stringify(positioned[0].photo))}
             {positioned.map(({ photo, x, y, index, delay }) => {
                 const photoColor = photo.emotion
                     ? (EMOTION_COLORS[photo.emotion] ?? "#F59E0B")
