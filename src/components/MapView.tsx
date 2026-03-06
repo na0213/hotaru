@@ -13,6 +13,7 @@ import "leaflet/dist/leaflet.css";
 import type { Map as LeafletMap } from "leaflet";
 
 import { supabase } from "@/lib/supabase";
+import { getUserId } from "@/lib/userId";
 import { type Emotion } from "@/types";
 import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 import { EnableTap } from "@/components/EnableTap";
@@ -31,7 +32,7 @@ const EMOTION_COLORS: Record<string, string> = {
     nokoshitai: "#F472B6",
 };
 
-type FilterType = Emotion | "all";
+type FilterType = Emotion | "all" | "my";
 
 /** デフォルト: 日本全体 */
 const DEFAULT_CENTER: [number, number] = [36.5, 137.5];
@@ -67,6 +68,7 @@ export default function MapView() {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
     const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
+    const [mySpotIds, setMySpotIds] = useState<Set<string>>(new Set());
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapRef = useRef<any>(null);
 
@@ -107,6 +109,17 @@ export default function MapView() {
         })();
     }, []);
 
+    // ── 自分のloves（spot_id）取得 ──
+    useEffect(() => {
+        (async () => {
+            const { data } = await supabase
+                .from("loves")
+                .select("spot_id")
+                .eq("user_id", getUserId());
+            if (data) setMySpotIds(new Set(data.map((d) => d.spot_id)));
+        })();
+    }, []);
+
     // ── japan.geojson読み込み（オプション） ──
     useEffect(() => {
         fetch("/japan.geojson")
@@ -124,6 +137,8 @@ export default function MapView() {
     const filteredSpots =
         filter === "all"
             ? spots
+            : filter === "my"
+            ? spots.filter((s) => mySpotIds.has(s.id))
             : spots.filter((s) => s.primary_emotion === filter);
 
     const handleSpotClick = useCallback((spot: SpotRow) => {
@@ -272,6 +287,20 @@ export default function MapView() {
                         }}
                     >
                         ALL
+                    </div>
+
+                    {/* MY ボタン */}
+                    <div
+                        role="button"
+                        onClick={() => setFilter(filter === "my" ? "all" : "my")}
+                        className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold tracking-wider transition-all"
+                        style={{
+                            color: filter === "my" ? "#F59E0B" : GRAY,
+                            background: filter === "my" ? "rgba(245, 158, 11, 0.15)" : "transparent",
+                            border: filter === "my" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
+                        }}
+                    >
+                        MY
                     </div>
 
                     {/* 感情ドット */}
