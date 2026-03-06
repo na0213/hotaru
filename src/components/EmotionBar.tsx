@@ -9,9 +9,21 @@ export function EmotionBar({ tanoshii, utsukushii, nokoshitai }: Props) {
     if (total === 0) return null;
 
     const segments = [
-        { count: tanoshii,   color: "#F97316" },
-        { count: utsukushii, color: "#38BDF8" },
-        { count: nokoshitai, color: "#F472B6" },
+        {
+            count: tanoshii,
+            background: "linear-gradient(90deg, #F97316, #FBBF24, #F97316)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 0 8px rgba(249, 115, 22, 0.6), 0 0 16px rgba(249, 115, 22, 0.3)",
+        },
+        {
+            count: utsukushii,
+            background: "linear-gradient(90deg, #38BDF8, #818CF8, #38BDF8)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 0 8px rgba(56, 189, 248, 0.6), 0 0 16px rgba(56, 189, 248, 0.3)",
+        },
+        {
+            count: nokoshitai,
+            background: "linear-gradient(90deg, #F472B6, #E879F9, #F472B6)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 0 8px rgba(244, 114, 182, 0.6), 0 0 16px rgba(244, 114, 182, 0.3)",
+        },
     ].filter((s) => s.count > 0);
 
     return (
@@ -19,7 +31,7 @@ export function EmotionBar({ tanoshii, utsukushii, nokoshitai }: Props) {
             style={{
                 display: "flex",
                 width: "100%",
-                height: 6,
+                height: 8,
                 borderRadius: 9999,
                 overflow: "hidden",
             }}
@@ -37,13 +49,13 @@ export function EmotionBar({ tanoshii, utsukushii, nokoshitai }: Props) {
                 }
                 return (
                     <div
-                        key={seg.color}
+                        key={seg.background}
                         style={{
                             width: `${(seg.count / total) * 100}%`,
                             height: "100%",
-                            background: seg.color,
+                            background: seg.background,
                             borderRadius,
-                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.2), 0 0 8px ${seg.color}44`,
+                            boxShadow: seg.boxShadow,
                         }}
                     />
                 );

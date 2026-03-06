@@ -103,17 +103,15 @@ function TripSection({
                 <h2 className="text-base font-bold" style={{ color: WHITE }}>
                     {trip.title || "無題の旅"}
                 </h2>
-                <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs" style={{ color: GRAY }}>
-                        {formatDate(trip.start_time)}
-                    </span>
-                    <div style={{ marginTop: 6, marginBottom: 6 }}>
-                        <EmotionBar
-                            tanoshii={trip.tanoshii_count}
-                            utsukushii={trip.utsukushii_count}
-                            nokoshitai={trip.nokoshitai_count}
-                        />
-                    </div>
+                <p className="text-xs mt-1" style={{ color: GRAY }}>
+                    {formatDate(trip.start_time)}
+                </p>
+                <div style={{ margin: "6px 0", width: "60%" }}>
+                    <EmotionBar
+                        tanoshii={trip.tanoshii_count}
+                        utsukushii={trip.utsukushii_count}
+                        nokoshitai={trip.nokoshitai_count}
+                    />
                 </div>
             </div>
 
