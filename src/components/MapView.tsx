@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import { motion, AnimatePresence } from "framer-motion";
 import "leaflet/dist/leaflet.css";
+import type { Map as LeafletMap } from "leaflet";
 
 import { supabase } from "@/lib/supabase";
 import { type Emotion } from "@/types";
@@ -17,6 +18,7 @@ import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 import { EnableTap } from "@/components/EnableTap";
 import { SpotPhotoBubbles } from "@/components/SpotPhotoBubbles";
 import { PhotoGalleryModal } from "@/components/PhotoGalleryModal";
+import { HotaruGlow } from "@/components/HotaruGlow";
 import type { Database } from "@/lib/database.types";
 
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
@@ -36,13 +38,20 @@ const DEFAULT_CENTER: [number, number] = [36.5, 137.5];
 const DEFAULT_ZOOM = 5;
 const LOCATED_ZOOM = 13;
 
-/** MapContainer内でmap instanceをrefに保持するヘルパー */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<any> }) {
+/** MapContainer内でmap instanceをrefと状態の両方に保持するヘルパー */
+function MapRefCapture({
+    mapRef,
+    onMap,
+}: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mapRef: React.MutableRefObject<any>;
+    onMap: (map: LeafletMap) => void;
+}) {
     const map = useMap();
     useEffect(() => {
         mapRef.current = map;
-    }, [map, mapRef]);
+        onMap(map);
+    }, [map, mapRef, onMap]);
     return null;
 }
 
@@ -57,6 +66,7 @@ export default function MapView() {
     const [japanGeo, setJapanGeo] = useState<any>(null);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
+    const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapRef = useRef<any>(null);
 
@@ -124,6 +134,10 @@ export default function MapView() {
         }
     }, []);
 
+    const handleMapReady = useCallback((map: LeafletMap) => {
+        setMapInstance(map);
+    }, []);
+
     const mapCenter = userLocation ?? DEFAULT_CENTER;
     const mapZoom = userLocation ? LOCATED_ZOOM : DEFAULT_ZOOM;
 
@@ -159,7 +173,7 @@ export default function MapView() {
                 attributionControl={false}
             >
                 <EnableTap />
-                <MapRefCapture mapRef={mapRef} />
+                <MapRefCapture mapRef={mapRef} onMap={handleMapReady} />
 
                 {/* ダークタイル */}
                 <TileLayer
@@ -180,54 +194,25 @@ export default function MapView() {
                     />
                 )}
 
-                {/* ── 蛍マーカー ── */}
+                {/* ── クリック用透明マーカー（Three.jsに描画を委譲） ── */}
                 {filteredSpots.map((spot) => {
-                    const color = EMOTION_COLORS[spot.primary_emotion] ?? GOLD;
                     const radius = Math.min(3 + Math.sqrt(spot.love_count) * 0.6, 12);
-                    const opacity = Math.min(0.3 + spot.love_count * 0.005, 0.9);
-
                     return (
-                        <React.Fragment key={spot.id}>
-                            {/* 外側glow（大きくぼんやり） */}
-                            <CircleMarker
-                                center={[spot.lat, spot.lng]}
-                                radius={radius * 2.2}
-                                pathOptions={{
-                                    fillColor: color,
-                                    fillOpacity: opacity * 0.25,
-                                    color: "transparent",
-                                    weight: 0,
-                                }}
-                                interactive={false}
-                            />
-                            {/* 中間glow */}
-                            <CircleMarker
-                                center={[spot.lat, spot.lng]}
-                                radius={radius * 1.8}
-                                pathOptions={{
-                                    fillColor: color,
-                                    fillOpacity: opacity * 0.4,
-                                    color: "transparent",
-                                    weight: 0,
-                                }}
-                                interactive={false}
-                            />
-                            {/* コア（中心の明るい光） */}
-                            <CircleMarker
-                                center={[spot.lat, spot.lng]}
-                                radius={radius}
-                                pathOptions={{
-                                    fillColor: "#ffffff",
-                                    fillOpacity: opacity * 0.6,
-                                    color: color,
-                                    opacity: opacity * 0.8,
-                                    weight: radius * 0.5,
-                                }}
-                                eventHandlers={{
-                                    click: () => handleSpotClick(spot),
-                                }}
-                            />
-                        </React.Fragment>
+                        <CircleMarker
+                            key={spot.id}
+                            center={[spot.lat, spot.lng]}
+                            radius={radius}
+                            pathOptions={{
+                                fillColor: "transparent",
+                                fillOpacity: 0,
+                                color: "transparent",
+                                opacity: 0,
+                                weight: 0,
+                            }}
+                            eventHandlers={{
+                                click: () => handleSpotClick(spot),
+                            }}
+                        />
                     );
                 })}
 
@@ -246,6 +231,9 @@ export default function MapView() {
                     />
                 )}
             </MapContainer>
+
+            {/* ── 光の粒子レイヤー（Three.js） ── */}
+            <HotaruGlow spots={filteredSpots} mapInstance={mapInstance} />
 
             {/* ── ヘッダー ── */}
             <div className="absolute left-0 right-0 top-0 z-[500] flex items-center justify-between px-4 py-3">

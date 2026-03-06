@@ -107,7 +107,12 @@ export function SpotPhotoBubbles({
             )}
 
             {/* 写真バブル */}
-            {positioned.map(({ photo, x, y, index, delay }) => (
+            {positioned.length > 0 && console.log("[SpotPhotoBubbles] photo[0]:", JSON.stringify(positioned[0].photo))}
+            {positioned.map(({ photo, x, y, index, delay }) => {
+                const photoColor = photo.emotion
+                    ? (EMOTION_COLORS[photo.emotion] ?? "#F59E0B")
+                    : "#F59E0B";
+                return (
                 <motion.div
                     key={photo.id}
                     initial={{ opacity: 0, scale: 0 }}
@@ -121,8 +126,8 @@ export function SpotPhotoBubbles({
                         height: 55,
                         borderRadius: "50%",
                         transform: "translate(-50%, -50%)",
-                        border: "2px solid rgba(255,255,255,0.8)",
-                        boxShadow: `0 0 12px ${color}99`,
+                        border: `2px solid ${photoColor}`,
+                        boxShadow: `0 0 12px ${photoColor}88, 0 0 24px ${photoColor}44`,
                     }}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -136,7 +141,8 @@ export function SpotPhotoBubbles({
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                 </motion.div>
-            ))}
+                );
+            })}
         </div>
     );
 }

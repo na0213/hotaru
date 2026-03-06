@@ -401,6 +401,27 @@ async function upsertSpot(params: {
             p_emotion: emotion,
         });
 
+        // primary_emotion を最多の感情に更新
+        const { data: updatedSpot } = await supabase
+            .from("spots")
+            .select("tanoshii_count, utsukushii_count, nokoshitai_count")
+            .eq("id", existingSpot.id)
+            .single();
+
+        if (updatedSpot) {
+            const counts = {
+                tanoshii:   updatedSpot.tanoshii_count,
+                utsukushii: updatedSpot.utsukushii_count,
+                nokoshitai: updatedSpot.nokoshitai_count,
+            };
+            const primaryEmotion = (Object.entries(counts) as [string, number][])
+                .reduce((a, b) => a[1] >= b[1] ? a : b)[0];
+            await supabase
+                .from("spots")
+                .update({ primary_emotion: primaryEmotion })
+                .eq("id", existingSpot.id);
+        }
+
         // love_count: ユニークユーザー数の更新
         const { count } = await supabase
             .from("loves")

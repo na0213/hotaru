@@ -143,6 +143,7 @@ export type Database = {
                     spot_id: string;
                     photo_url: string;
                     caption: string | null;
+                    emotion: string | null;
                     sort_order: number;
                     created_at: string;
                 };
@@ -151,6 +152,7 @@ export type Database = {
                     spot_id: string;
                     photo_url: string;
                     caption?: string | null;
+                    emotion?: string | null;
                     sort_order?: number;
                     created_at?: string;
                 };
@@ -159,6 +161,7 @@ export type Database = {
                     spot_id?: string;
                     photo_url?: string;
                     caption?: string | null;
+                    emotion?: string | null;
                     sort_order?: number;
                     created_at?: string;
                 };
