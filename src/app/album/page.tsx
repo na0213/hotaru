@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { getUserId } from "@/lib/userId";
 import { getCurrentTripId } from "@/lib/tripSession";
@@ -10,6 +10,7 @@ import { EMOTIONS, type Emotion } from "@/types";
 import { BG, BG_CARD, GOLD, WHITE, GRAY, ORANGE, BLUE, PINK } from "@/constants/colors";
 import type { Database } from "@/lib/database.types";
 import { CardDetailModal, type LoveWithSpot } from "@/components/CardDetailModal";
+import { EmotionBar } from "@/components/EmotionBar";
 
 type TripRow = Database["public"]["Tables"]["trips"]["Row"];
 
@@ -31,16 +32,19 @@ function LoveCard({ love, onTap }: { love: LoveWithSpot; onTap: () => void }) {
     const color = EMOTION_COLORS[emotion] ?? EMOTION_COLORS.tanoshii;
 
     return (
-        <div
+        <motion.div
             role="button"
             onClick={onTap}
-            className="flex-none cursor-pointer rounded-2xl overflow-hidden transition-transform active:scale-95"
+            whileTap={{ scale: 1.05 }}
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="flex-none cursor-pointer rounded-2xl overflow-hidden"
             style={{
                 width: 160,
                 height: 220,
                 background: BG_CARD,
-                boxShadow: `0 0 16px ${color}30`,
-                border: `1px solid ${color}30`,
+                boxShadow: `0 0 12px rgba(${color === ORANGE ? "249,115,22" : color === BLUE ? "56,189,248" : "244,114,182"}, 0.3)`,
+                border: `2px solid rgba(${color === ORANGE ? "249,115,22" : color === BLUE ? "56,189,248" : "244,114,182"}, 0.7)`,
             }}
         >
             {/* 写真エリア（上130px） */}
@@ -79,7 +83,7 @@ function LoveCard({ love, onTap }: { love: LoveWithSpot; onTap: () => void }) {
                     </p>
                 )}
             </div>
-        </div>
+        </motion.div>
     );
 }
 
@@ -103,9 +107,13 @@ function TripSection({
                     <span className="text-xs" style={{ color: GRAY }}>
                         {formatDate(trip.start_time)}
                     </span>
-                    <span className="text-xs" style={{ color: GRAY }}>
-                        🟠{trip.tanoshii_count} 🔵{trip.utsukushii_count} 🩷{trip.nokoshitai_count}
-                    </span>
+                    <div style={{ marginTop: 6, marginBottom: 6 }}>
+                        <EmotionBar
+                            tanoshii={trip.tanoshii_count}
+                            utsukushii={trip.utsukushii_count}
+                            nokoshitai={trip.nokoshitai_count}
+                        />
+                    </div>
                 </div>
             </div>
 

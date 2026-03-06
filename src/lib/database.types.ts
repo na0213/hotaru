@@ -137,6 +137,41 @@ export type Database = {
                     },
                 ];
             };
+            spot_photos: {
+                Row: {
+                    id: string;
+                    spot_id: string;
+                    photo_url: string;
+                    caption: string | null;
+                    sort_order: number;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    spot_id: string;
+                    photo_url: string;
+                    caption?: string | null;
+                    sort_order?: number;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    spot_id?: string;
+                    photo_url?: string;
+                    caption?: string | null;
+                    sort_order?: number;
+                    created_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: "spot_photos_spot_id_fkey";
+                        columns: ["spot_id"];
+                        isOneToOne: false;
+                        referencedRelation: "spots";
+                        referencedColumns: ["id"];
+                    },
+                ];
+            };
             push_subscriptions: {
                 Row: {
                     id: string;

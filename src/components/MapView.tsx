@@ -1,23 +1,26 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     MapContainer,
     TileLayer,
     CircleMarker,
     GeoJSON,
+    useMap,
 } from "react-leaflet";
 import { motion, AnimatePresence } from "framer-motion";
 import "leaflet/dist/leaflet.css";
 
 import { supabase } from "@/lib/supabase";
-import { EMOTIONS, type Emotion } from "@/types";
+import { type Emotion } from "@/types";
 import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 import { EnableTap } from "@/components/EnableTap";
-import { SpotPetalView } from "@/components/SpotPetalView";
+import { SpotPhotoBubbles } from "@/components/SpotPhotoBubbles";
+import { PhotoGalleryModal } from "@/components/PhotoGalleryModal";
 import type { Database } from "@/lib/database.types";
 
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
+type SpotPhoto = Database["public"]["Tables"]["spot_photos"]["Row"];
 
 /** 感情カラーマップ */
 const EMOTION_COLORS: Record<string, string> = {
@@ -33,14 +36,29 @@ const DEFAULT_CENTER: [number, number] = [36.5, 137.5];
 const DEFAULT_ZOOM = 5;
 const LOCATED_ZOOM = 13;
 
+/** MapContainer内でmap instanceをrefに保持するヘルパー */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function MapRefCapture({ mapRef }: { mapRef: React.MutableRefObject<any> }) {
+    const map = useMap();
+    useEffect(() => {
+        mapRef.current = map;
+    }, [map, mapRef]);
+    return null;
+}
+
 export default function MapView() {
     const [spots, setSpots] = useState<SpotRow[]>([]);
+    const [spotPhotos, setSpotPhotos] = useState<Record<string, SpotPhoto[]>>({});
     const [filter, setFilter] = useState<FilterType>("all");
     const [selectedSpot, setSelectedSpot] = useState<SpotRow | null>(null);
+    const [spotScreenPos, setSpotScreenPos] = useState<{ x: number; y: number } | null>(null);
+    const [selectedPhoto, setSelectedPhoto] = useState<{ photos: SpotPhoto[]; index: number } | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [japanGeo, setJapanGeo] = useState<any>(null);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapRef = useRef<any>(null);
 
     // ── 現在地取得 ──
     useEffect(() => {
@@ -60,14 +78,22 @@ export default function MapView() {
         );
     }, []);
 
-    // ── spots取得 ──
+    // ── spots + spot_photos 取得 ──
     useEffect(() => {
         (async () => {
-            const { data, error } = await supabase
-                .from("spots")
-                .select("*")
-                .order("created_at", { ascending: false });
+            const [{ data, error }, { data: photosData }] = await Promise.all([
+                supabase.from("spots").select("*").order("created_at", { ascending: false }),
+                supabase.from("spot_photos").select("*").order("sort_order", { ascending: true }),
+            ]);
             if (!error && data) setSpots(data);
+            if (photosData) {
+                const map: Record<string, SpotPhoto[]> = {};
+                photosData.forEach((p) => {
+                    if (!map[p.spot_id]) map[p.spot_id] = [];
+                    map[p.spot_id].push(p);
+                });
+                setSpotPhotos(map);
+            }
         })();
     }, []);
 
@@ -92,26 +118,11 @@ export default function MapView() {
 
     const handleSpotClick = useCallback((spot: SpotRow) => {
         setSelectedSpot(spot);
+        if (mapRef.current) {
+            const point = mapRef.current.latLngToContainerPoint([spot.lat, spot.lng]);
+            setSpotScreenPos({ x: point.x, y: point.y });
+        }
     }, []);
-
-    const filterOptions: { key: FilterType; label: string; color: string }[] = [
-        { key: "all", label: "全て", color: GOLD },
-        {
-            key: "tanoshii",
-            label: EMOTIONS.tanoshii.emoji,
-            color: EMOTION_COLORS.tanoshii,
-        },
-        {
-            key: "utsukushii",
-            label: EMOTIONS.utsukushii.emoji,
-            color: EMOTION_COLORS.utsukushii,
-        },
-        {
-            key: "nokoshitai",
-            label: EMOTIONS.nokoshitai.emoji,
-            color: EMOTION_COLORS.nokoshitai,
-        },
-    ];
 
     const mapCenter = userLocation ?? DEFAULT_CENTER;
     const mapZoom = userLocation ? LOCATED_ZOOM : DEFAULT_ZOOM;
@@ -148,6 +159,7 @@ export default function MapView() {
                 attributionControl={false}
             >
                 <EnableTap />
+                <MapRefCapture mapRef={mapRef} />
 
                 {/* ダークタイル */}
                 <TileLayer
@@ -171,24 +183,51 @@ export default function MapView() {
                 {/* ── 蛍マーカー ── */}
                 {filteredSpots.map((spot) => {
                     const color = EMOTION_COLORS[spot.primary_emotion] ?? GOLD;
-                    const radius = Math.min(6 + spot.love_count * 0.3, 20);
+                    const radius = Math.min(3 + Math.sqrt(spot.love_count) * 0.6, 12);
+                    const opacity = Math.min(0.3 + spot.love_count * 0.005, 0.9);
 
                     return (
-                        <CircleMarker
-                            key={spot.id}
-                            center={[spot.lat, spot.lng]}
-                            radius={radius}
-                            pathOptions={{
-                                fillColor: color,
-                                fillOpacity: 0.8,
-                                color: color,
-                                opacity: 1,
-                                weight: 0,
-                            }}
-                            eventHandlers={{
-                                click: () => handleSpotClick(spot),
-                            }}
-                        />
+                        <React.Fragment key={spot.id}>
+                            {/* 外側glow（大きくぼんやり） */}
+                            <CircleMarker
+                                center={[spot.lat, spot.lng]}
+                                radius={radius * 2.2}
+                                pathOptions={{
+                                    fillColor: color,
+                                    fillOpacity: opacity * 0.25,
+                                    color: "transparent",
+                                    weight: 0,
+                                }}
+                                interactive={false}
+                            />
+                            {/* 中間glow */}
+                            <CircleMarker
+                                center={[spot.lat, spot.lng]}
+                                radius={radius * 1.8}
+                                pathOptions={{
+                                    fillColor: color,
+                                    fillOpacity: opacity * 0.4,
+                                    color: "transparent",
+                                    weight: 0,
+                                }}
+                                interactive={false}
+                            />
+                            {/* コア（中心の明るい光） */}
+                            <CircleMarker
+                                center={[spot.lat, spot.lng]}
+                                radius={radius}
+                                pathOptions={{
+                                    fillColor: "#ffffff",
+                                    fillOpacity: opacity * 0.6,
+                                    color: color,
+                                    opacity: opacity * 0.8,
+                                    weight: radius * 0.5,
+                                }}
+                                eventHandlers={{
+                                    click: () => handleSpotClick(spot),
+                                }}
+                            />
+                        </React.Fragment>
                     );
                 })}
 
@@ -227,42 +266,111 @@ export default function MapView() {
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    className="flex items-center gap-2 rounded-full px-3 py-2"
+                    className="flex items-center gap-3 rounded-full px-4 py-2.5"
                     style={{
                         background: `${BG_CARD}E0`,
                         backdropFilter: "blur(10px)",
                         border: `1px solid ${GRAY}20`,
                     }}
                 >
-                    {filterOptions.map((opt) => {
-                        const isActive = filter === opt.key;
+                    {/* ALL ボタン */}
+                    <div
+                        role="button"
+                        onClick={() => setFilter("all")}
+                        className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold tracking-wider transition-all"
+                        style={{
+                            color: filter === "all" ? WHITE : GRAY,
+                            background: filter === "all" ? "rgba(255,255,255,0.15)" : "transparent",
+                        }}
+                    >
+                        ALL
+                    </div>
+
+                    {/* 感情ドット */}
+                    {(["tanoshii", "utsukushii", "nokoshitai"] as const).map((emotion) => {
+                        const isActive = filter === emotion;
+                        const color = EMOTION_COLORS[emotion];
+                        const label = emotion === "tanoshii" ? "たのしい" : emotion === "utsukushii" ? "うつくしい" : "のこしたい";
+
                         return (
-                            <div
-                                key={opt.key}
+                            <motion.div
+                                key={emotion}
                                 role="button"
-                                onClick={() => setFilter(opt.key)}
-                                className="cursor-pointer rounded-full px-3 py-1.5 text-xs font-medium transition-all"
+                                onClick={() => setFilter(isActive ? "all" : emotion)}
+                                className="flex cursor-pointer items-center gap-1.5 rounded-full transition-all"
                                 style={{
-                                    background: isActive ? `${opt.color}25` : "transparent",
-                                    color: isActive ? opt.color : GRAY,
-                                    border: isActive
-                                        ? `1px solid ${opt.color}50`
-                                        : "1px solid transparent",
+                                    padding: isActive ? "4px 12px 4px 8px" : "4px",
+                                    background: isActive ? `${color}20` : "transparent",
                                 }}
+                                layout
+                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             >
-                                {opt.label}
-                            </div>
+                                <motion.span
+                                    className="inline-block flex-shrink-0 rounded-full"
+                                    style={{
+                                        width: isActive ? 10 : 14,
+                                        height: isActive ? 10 : 14,
+                                        background: color,
+                                        boxShadow: `0 0 ${isActive ? 10 : 6}px ${color}${isActive ? "AA" : "66"}`,
+                                    }}
+                                    layout
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                />
+                                <AnimatePresence>
+                                    {isActive && (
+                                        <motion.span
+                                            initial={{ width: 0, opacity: 0 }}
+                                            animate={{ width: "auto", opacity: 1 }}
+                                            exit={{ width: 0, opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            style={{
+                                                color: color,
+                                                fontSize: 11,
+                                                fontWeight: 600,
+                                                whiteSpace: "nowrap",
+                                                overflow: "hidden",
+                                                display: "inline-block",
+                                            }}
+                                        >
+                                            {label}
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
                         );
                     })}
                 </motion.div>
             </div>
 
-            {/* ── SpotPetalView モーダル ── */}
+            {/* ── 写真バブルオーバーレイ ── */}
             <AnimatePresence>
-                {selectedSpot && (
-                    <SpotPetalView
+                {selectedSpot && spotScreenPos && (
+                    <SpotPhotoBubbles
                         spot={selectedSpot}
-                        onClose={() => setSelectedSpot(null)}
+                        photos={spotPhotos[selectedSpot.id] ?? []}
+                        centerPosition={spotScreenPos}
+                        onClose={() => {
+                            setSelectedSpot(null);
+                            setSpotScreenPos(null);
+                        }}
+                        onPhotoClick={(index) => {
+                            setSelectedPhoto({
+                                photos: spotPhotos[selectedSpot.id] ?? [],
+                                index,
+                            });
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* ── 写真ギャラリーモーダル ── */}
+            <AnimatePresence>
+                {selectedPhoto && selectedSpot && (
+                    <PhotoGalleryModal
+                        photos={selectedPhoto.photos}
+                        initialIndex={selectedPhoto.index}
+                        spot={selectedSpot}
+                        onClose={() => setSelectedPhoto(null)}
                     />
                 )}
             </AnimatePresence>

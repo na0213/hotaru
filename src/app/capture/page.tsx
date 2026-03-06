@@ -11,6 +11,9 @@ import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 
 type Step = "camera" | "emotion" | "saving";
 
+const DEFAULT_LAT = 35.6762;
+const DEFAULT_LNG = 139.6503;
+
 export default function CapturePage() {
     const router = useRouter();
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -21,6 +24,7 @@ export default function CapturePage() {
     const [photoUrl, setPhotoUrl] = useState<string>("");
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string>("");
+    const [usedFallbackCoords, setUsedFallbackCoords] = useState(false);
 
     // ── 旅セッション外ならリダイレクト ──
     useEffect(() => {
@@ -106,15 +110,29 @@ export default function CapturePage() {
                 const tripId = getCurrentTripId();
                 if (!tripId) throw new Error("旅セッションが見つかりません");
 
-                // 1. 現在地取得
-                const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-                    navigator.geolocation.getCurrentPosition(resolve, reject, {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                    })
+                // 1. 現在地取得（失敗時はデフォルト座標にフォールバック）
+                const { lat, lng, isFallback } = await new Promise<{
+                    lat: number;
+                    lng: number;
+                    isFallback: boolean;
+                }>((resolve) =>
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) =>
+                            resolve({
+                                lat: pos.coords.latitude,
+                                lng: pos.coords.longitude,
+                                isFallback: false,
+                            }),
+                        () =>
+                            resolve({
+                                lat: DEFAULT_LAT,
+                                lng: DEFAULT_LNG,
+                                isFallback: true,
+                            }),
+                        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+                    )
                 );
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
+                setUsedFallbackCoords(isFallback);
 
                 // 2. 写真アップロード（先に完了させる）
                 const fileName = `${userId}/${Date.now()}.jpg`;
@@ -299,6 +317,13 @@ export default function CapturePage() {
                                 );
                             })}
                         </div>
+
+                        {/* 位置情報フォールバック注記 */}
+                        {usedFallbackCoords && (
+                            <p className="mt-3 text-center text-[10px]" style={{ color: GRAY }}>
+                                ※ 位置情報を取得できなかったため、デフォルト座標で保存されました
+                            </p>
+                        )}
 
                         {/* 撮り直す */}
                         <div className="mt-4 flex justify-center">
