@@ -41,13 +41,14 @@ export default function SettingsPage() {
         }
     }, []);
 
-    // enabled 変化時に nearbyWatch を開始/停止
+    // enabled 変化時に nearbyWatch を開始/停止（ページを離れても停止しない）
     useEffect(() => {
         if (enabled) {
             startNearbyWatch();
         } else {
             stopNearbyWatch();
         }
+        // cleanup なし: ホーム画面で管理するため設定ページ離脱時は停止しない
     }, [enabled]);
 
     const handleToggle = async () => {

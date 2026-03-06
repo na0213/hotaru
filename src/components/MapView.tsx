@@ -196,7 +196,7 @@ export default function MapView() {
 
                 {/* ── クリック用透明マーカー（Three.jsに描画を委譲） ── */}
                 {filteredSpots.map((spot) => {
-                    const radius = Math.min(3 + Math.sqrt(spot.love_count) * 0.6, 12);
+                    const radius = Math.max(Math.min(5 + Math.sqrt(spot.love_count) * 1.2, 25), 15);
                     return (
                         <CircleMarker
                             key={spot.id}
@@ -207,7 +207,7 @@ export default function MapView() {
                                 fillOpacity: 0,
                                 color: "transparent",
                                 opacity: 0,
-                                weight: 0,
+                                weight: 15,
                             }}
                             eventHandlers={{
                                 click: () => handleSpotClick(spot),

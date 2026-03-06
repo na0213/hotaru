@@ -14,6 +14,7 @@ import {
 import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 import { TitleInputModal } from "@/components/TitleInputModal";
 import { TripSummaryModal } from "@/components/TripSummaryModal";
+import { startNearbyWatch, stopNearbyWatch } from "@/lib/nearbyCheck";
 import type { Database } from "@/lib/database.types";
 
 type TripRow = Database["public"]["Tables"]["trips"]["Row"];
@@ -28,6 +29,14 @@ export default function Home() {
 
   useEffect(() => {
     setOnTrip(isOnTrip());
+  }, []);
+
+  // 通知ONの場合はアプリ起動時から常に位置監視を開始
+  useEffect(() => {
+    if (localStorage.getItem("hotaru_push_enabled") === "true") {
+      startNearbyWatch();
+    }
+    return () => stopNearbyWatch();
   }, []);
 
   // ── 旅をはじめる ──
