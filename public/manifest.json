@@ -1,0 +1,22 @@
+{
+    "name": "Hotaru - 蛍",
+    "short_name": "Hotaru",
+    "description": "旅の記憶を蛍の光として灯す。感情で場所を彩る旅行PWAアプリ。",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0B1026",
+    "theme_color": "#F59E0B",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

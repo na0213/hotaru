@@ -1,65 +1,211 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { getUserId } from "@/lib/userId";
+import {
+  isOnTrip,
+  getCurrentTripId,
+  startTrip,
+  endTrip,
+} from "@/lib/tripSession";
+import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 
 export default function Home() {
+  const router = useRouter();
+  const [onTrip, setOnTrip] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setOnTrip(isOnTrip());
+  }, []);
+
+  // ── 旅をはじめる ──
+  const handleStartTrip = useCallback(async () => {
+    setLoading(true);
+    try {
+      const userId = getUserId();
+      const { data, error } = await supabase
+        .from("trips")
+        .insert({ user_id: userId })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+      startTrip(data.id);
+      setOnTrip(true);
+    } catch (err) {
+      console.error("旅の開始に失敗しました", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ── 旅をおわる ──
+  const handleEndTrip = useCallback(async () => {
+    setLoading(true);
+    try {
+      const tripId = getCurrentTripId();
+      if (tripId) {
+        await supabase
+          .from("trips")
+          .update({ end_time: new Date().toISOString() })
+          .eq("id", tripId);
+      }
+      endTrip();
+      setOnTrip(false);
+    } catch (err) {
+      console.error("旅の終了に失敗しました", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div
+      className="flex min-h-dvh flex-col items-center justify-center px-6"
+      style={{ background: `linear-gradient(180deg, #0B1026 0%, #12122A 100%)` }}
+    >
+      {/* 旅セッション中バナー */}
+      <AnimatePresence>
+        {onTrip && (
+          <motion.div
+            initial={{ y: -60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -60, opacity: 0 }}
+            className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center py-3"
+            style={{ background: GOLD }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <span className="text-sm font-bold text-black">
+              🌟 旅の記録中...
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* タイトル */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="mb-12 text-center"
+      >
+        <h1 className="text-4xl font-bold tracking-tight">
+          <span style={{ color: GOLD }}>Hotaru</span>
+          <span className="ml-2 text-lg" style={{ color: GRAY }}>
+            蛍
+          </span>
+        </h1>
+        <p className="mt-3 text-sm" style={{ color: GRAY }}>
+          旅の記憶を、蛍の光として灯す。
+        </p>
+      </motion.div>
+
+      {/* メインボタン群 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="flex w-full max-w-xs flex-col items-center gap-4"
+      >
+        {!onTrip ? (
+          /* ── 旅をしていない状態 ── */
+          <>
+            <div
+              role="button"
+              onClick={handleStartTrip}
+              className="flex h-14 w-full cursor-pointer items-center justify-center rounded-2xl text-base font-bold text-black transition-transform active:scale-95"
+              style={{
+                background: loading
+                  ? GRAY
+                  : `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              {loading ? "開始中..." : "🌟 旅をはじめる"}
+            </div>
+
+            <NavButton
+              label="🗺️ 地図を見る"
+              onClick={() => router.push("/map")}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <NavButton
+              label="🃏 カードアルバム"
+              onClick={() => router.push("/album")}
+            />
+            <NavButton
+              label="⚙️ 設定"
+              onClick={() => router.push("/settings")}
+              small
+            />
+          </>
+        ) : (
+          /* ── 旅の記録中 ── */
+          <>
+            <div
+              role="button"
+              onClick={() => router.push("/capture")}
+              className="flex h-16 w-full cursor-pointer items-center justify-center rounded-2xl text-lg font-bold text-black transition-transform active:scale-95"
+              style={{
+                background: `linear-gradient(135deg, ${GOLD}, #FBBF24)`,
+              }}
+            >
+              ✨ 光を灯す
+            </div>
+
+            <NavButton
+              label="🗺️ 地図を見る"
+              onClick={() => router.push("/map")}
+            />
+            <NavButton
+              label="🃏 カードアルバム"
+              onClick={() => router.push("/album")}
+            />
+
+            <div
+              role="button"
+              onClick={handleEndTrip}
+              className="mt-4 cursor-pointer rounded-xl px-6 py-2 text-sm transition-transform active:scale-95"
+              style={{
+                color: GRAY,
+                border: `1px solid ${GRAY}40`,
+                opacity: loading ? 0.5 : 1,
+              }}
+            >
+              {loading ? "終了中..." : "旅をおわる"}
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+/* ── ナビゲーションボタン ── */
+function NavButton({
+  label,
+  onClick,
+  small,
+}: {
+  label: string;
+  onClick: () => void;
+  small?: boolean;
+}) {
+  return (
+    <div
+      role="button"
+      onClick={onClick}
+      className="flex w-full cursor-pointer items-center justify-center rounded-2xl text-sm font-medium transition-transform active:scale-95"
+      style={{
+        height: small ? 40 : 48,
+        background: BG_CARD,
+        color: WHITE,
+        border: `1px solid ${GRAY}20`,
+      }}
+    >
+      {label}
     </div>
   );
 }
