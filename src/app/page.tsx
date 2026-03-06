@@ -12,11 +12,19 @@ import {
   endTrip,
 } from "@/lib/tripSession";
 import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
+import { TitleInputModal } from "@/components/TitleInputModal";
+import { TripSummaryModal } from "@/components/TripSummaryModal";
+import type { Database } from "@/lib/database.types";
+
+type TripRow = Database["public"]["Tables"]["trips"]["Row"];
 
 export default function Home() {
   const router = useRouter();
   const [onTrip, setOnTrip] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showTitleModal, setShowTitleModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [summaryData, setSummaryData] = useState<TripRow | null>(null);
 
   useEffect(() => {
     setOnTrip(isOnTrip());
@@ -43,24 +51,48 @@ export default function Home() {
     }
   }, []);
 
-  // ── 旅をおわる ──
-  const handleEndTrip = useCallback(async () => {
+  // ── 旅をおわる → タイトル入力モーダルを表示 ──
+  const handleEndTrip = useCallback(() => {
+    setShowTitleModal(true);
+  }, []);
+
+  // ── タイトル確定 → Supabase更新 → サマリーモーダル ──
+  const handleTitleConfirm = useCallback(async (title: string) => {
     setLoading(true);
     try {
       const tripId = getCurrentTripId();
-      if (tripId) {
-        await supabase
-          .from("trips")
-          .update({ end_time: new Date().toISOString() })
-          .eq("id", tripId);
-      }
+      if (!tripId) return;
+
+      const { data: trip } = await supabase
+        .from("trips")
+        .update({ title, end_time: new Date().toISOString() })
+        .eq("id", tripId)
+        .select()
+        .single();
+
       endTrip();
-      setOnTrip(false);
+      setShowTitleModal(false);
+
+      if (trip) {
+        setSummaryData(trip);
+        setShowSummaryModal(true);
+      } else {
+        setOnTrip(false);
+      }
     } catch (err) {
       console.error("旅の終了に失敗しました", err);
+      setShowTitleModal(false);
+      setOnTrip(false);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // ── サマリーを閉じる → ホーム復帰 ──
+  const handleSummaryClose = useCallback(() => {
+    setShowSummaryModal(false);
+    setSummaryData(null);
+    setOnTrip(false);
   }, []);
 
   return (
@@ -179,6 +211,20 @@ export default function Home() {
           </>
         )}
       </motion.div>
+
+      {/* ── タイトル入力モーダル ── */}
+      <AnimatePresence>
+        {showTitleModal && (
+          <TitleInputModal onConfirm={handleTitleConfirm} />
+        )}
+      </AnimatePresence>
+
+      {/* ── サマリーモーダル ── */}
+      <AnimatePresence>
+        {showSummaryModal && summaryData && (
+          <TripSummaryModal trip={summaryData} onClose={handleSummaryClose} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
