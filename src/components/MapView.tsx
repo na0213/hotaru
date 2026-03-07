@@ -24,6 +24,15 @@ import type { Database } from "@/lib/database.types";
 
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
 type LoveRow = Database["public"]["Tables"]["loves"]["Row"];
+type SpotPhotoRow = Database["public"]["Tables"]["spot_photos"]["Row"];
+
+/** バブル表示用の統合型 */
+export type PhotoBubble = {
+    id: string;
+    photo_url: string | null;
+    emotion: string;
+    recorded_at: string;
+};
 
 /** 感情カラーマップ */
 const EMOTION_COLORS: Record<string, string> = {
@@ -61,8 +70,8 @@ export default function MapView() {
     const [filter, setFilter] = useState<FilterType>("all");
     const [selectedSpot, setSelectedSpot] = useState<SpotRow | null>(null);
     const [spotScreenPos, setSpotScreenPos] = useState<{ x: number; y: number } | null>(null);
-    const [spotLoves, setSpotLoves] = useState<LoveRow[]>([]);
-    const [selectedLoveIndex, setSelectedLoveIndex] = useState<number | null>(null);
+    const [bubbles, setBubbles] = useState<PhotoBubble[]>([]);
+    const [selectedBubbleIndex, setSelectedBubbleIndex] = useState<number | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [japanGeo, setJapanGeo] = useState<any>(null);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -134,9 +143,8 @@ export default function MapView() {
             : spots.filter((s) => s.primary_emotion === filter);
 
     const handleSpotClick = useCallback(async (spot: SpotRow) => {
-        // 前の選択をリセット
-        setSelectedLoveIndex(null);
-        setSpotLoves([]);
+        setSelectedBubbleIndex(null);
+        setBubbles([]);
         setSelectedSpot(spot);
 
         if (mapRef.current) {
@@ -144,21 +152,60 @@ export default function MapView() {
             setSpotScreenPos({ x: point.x, y: point.y });
         }
 
-        const { data } = await supabase
-            .from("loves")
-            .select("*")
-            .eq("spot_id", spot.id)
-            .not("photo_url", "is", null)
-            .order("recorded_at", { ascending: false })
-            .limit(8);
-        setSpotLoves(data ?? []);
+        // loves と spot_photos を並行取得
+        const [{ data: lovesData, error: lovesErr }, { data: photosData, error: photosErr }] =
+            await Promise.all([
+                supabase
+                    .from("loves")
+                    .select("*")
+                    .eq("spot_id", spot.id)
+                    .order("recorded_at", { ascending: false })
+                    .limit(8),
+                supabase
+                    .from("spot_photos")
+                    .select("*")
+                    .eq("spot_id", spot.id)
+                    .order("sort_order", { ascending: true })
+                    .limit(8),
+            ]);
+
+        console.log("[Hotaru] spot tap", {
+            spotId: spot.id,
+            loves: lovesData,
+            lovesErr,
+            spot_photos: photosData,
+            photosErr,
+        });
+
+        // spot_photos をキューとして loves の写真がない場合に割り当て
+        const photoQueue: SpotPhotoRow[] = [...(photosData ?? [])];
+
+        const result: PhotoBubble[] = (lovesData ?? []).map((l) => {
+            const photoUrl = l.photo_url ?? photoQueue.shift()?.photo_url ?? spot.first_photo_url ?? null;
+            return { id: l.id, photo_url: photoUrl, emotion: l.emotion, recorded_at: l.recorded_at };
+        });
+
+        // loves が 0 件なら spot_photos をそのまま使う
+        if (result.length === 0) {
+            (photosData ?? []).slice(0, 8).forEach((p) => {
+                result.push({
+                    id: p.id,
+                    photo_url: p.photo_url,
+                    emotion: p.emotion ?? spot.primary_emotion,
+                    recorded_at: p.created_at,
+                });
+            });
+        }
+
+        console.log("[Hotaru] bubbles to display:", result);
+        setBubbles(result);
     }, []);
 
     const handleBubbleClose = useCallback(() => {
         setSelectedSpot(null);
         setSpotScreenPos(null);
-        setSpotLoves([]);
-        setSelectedLoveIndex(null);
+        setBubbles([]);
+        setSelectedBubbleIndex(null);
     }, []);
 
     const handleMapReady = useCallback((map: LeafletMap) => {
@@ -376,22 +423,22 @@ export default function MapView() {
                 {selectedSpot && spotScreenPos && (
                     <SpotPhotoBubbles
                         spot={selectedSpot}
-                        loves={spotLoves}
+                        bubbles={bubbles}
                         centerPosition={spotScreenPos}
                         onClose={handleBubbleClose}
-                        onPhotoClick={(index) => setSelectedLoveIndex(index)}
+                        onPhotoClick={(index) => setSelectedBubbleIndex(index)}
                     />
                 )}
             </AnimatePresence>
 
             {/* ── 写真カードモーダル ── */}
             <AnimatePresence>
-                {selectedLoveIndex !== null && spotLoves.length > 0 && selectedSpot && (
+                {selectedBubbleIndex !== null && bubbles.length > 0 && selectedSpot && (
                     <LoveCardModal
-                        loves={spotLoves}
-                        initialIndex={selectedLoveIndex}
+                        bubbles={bubbles}
+                        initialIndex={selectedBubbleIndex}
                         spot={selectedSpot}
-                        onClose={() => setSelectedLoveIndex(null)}
+                        onClose={() => setSelectedBubbleIndex(null)}
                     />
                 )}
             </AnimatePresence>

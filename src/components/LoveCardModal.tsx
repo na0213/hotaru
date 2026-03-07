@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Database } from "@/lib/database.types";
+import type { PhotoBubble } from "@/components/MapView";
 import { EMOTIONS, type Emotion } from "@/types";
 import { GOLD, WHITE, GRAY } from "@/constants/colors";
 
-type LoveRow = Database["public"]["Tables"]["loves"]["Row"];
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
 
 const EMOTION_COLORS: Record<string, string> = {
@@ -16,7 +16,7 @@ const EMOTION_COLORS: Record<string, string> = {
 };
 
 interface Props {
-    loves: LoveRow[];
+    bubbles: PhotoBubble[];
     initialIndex: number;
     spot: SpotRow;
     onClose: () => void;
@@ -27,20 +27,20 @@ function formatDate(dateStr: string): string {
     return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function LoveCardModal({ loves, initialIndex, spot, onClose }: Props) {
+export function LoveCardModal({ bubbles, initialIndex, spot, onClose }: Props) {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
-    const love = loves[currentIndex];
-    if (!love) return null;
+    const bubble = bubbles[currentIndex];
+    if (!bubble) return null;
 
-    const emotionDef = EMOTIONS[love.emotion as Emotion] ?? {
+    const emotionDef = EMOTIONS[bubble.emotion as Emotion] ?? {
         emoji: "✨",
-        label: love.emotion,
+        label: bubble.emotion,
         color: "#F59E0B",
     };
-    const color = EMOTION_COLORS[love.emotion] ?? "#F59E0B";
+    const color = EMOTION_COLORS[bubble.emotion] ?? "#F59E0B";
 
-    const goNext = () => setCurrentIndex((i) => Math.min(i + 1, loves.length - 1));
+    const goNext = () => setCurrentIndex((i) => Math.min(i + 1, bubbles.length - 1));
     const goPrev = () => setCurrentIndex((i) => Math.max(i - 1, 0));
 
     return (
@@ -119,10 +119,10 @@ export function LoveCardModal({ loves, initialIndex, spot, onClose }: Props) {
                             justifyContent: "center",
                         }}
                     >
-                        {love.photo_url ? (
+                        {bubble.photo_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                                src={love.photo_url}
+                                src={bubble.photo_url}
                                 alt=""
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                                 draggable={false}
@@ -139,7 +139,7 @@ export function LoveCardModal({ loves, initialIndex, spot, onClose }: Props) {
                             <span style={{ color, fontWeight: 700, fontSize: 14 }}>{emotionDef.label}</span>
                         </div>
                         <p style={{ color: GRAY, fontSize: 11, marginBottom: 10 }}>
-                            {formatDate(love.recorded_at)}
+                            {formatDate(bubble.recorded_at)}
                         </p>
 
                         {/* 場所名 or 座標 */}
@@ -181,7 +181,7 @@ export function LoveCardModal({ loves, initialIndex, spot, onClose }: Props) {
             </AnimatePresence>
 
             {/* ページインジケーター */}
-            {loves.length > 1 && (
+            {bubbles.length > 1 && (
                 <div
                     style={{
                         position: "absolute",
@@ -191,7 +191,7 @@ export function LoveCardModal({ loves, initialIndex, spot, onClose }: Props) {
                         alignItems: "center",
                     }}
                 >
-                    {loves.map((_, i) => (
+                    {bubbles.map((_, i) => (
                         <div
                             key={i}
                             style={{

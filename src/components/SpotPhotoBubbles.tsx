@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import type { Database } from "@/lib/database.types";
+import type { PhotoBubble } from "@/components/MapView";
 import { GOLD, GRAY } from "@/constants/colors";
 
-type LoveRow = Database["public"]["Tables"]["loves"]["Row"];
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
 
 const EMOTION_COLORS: Record<string, string> = {
@@ -15,15 +15,15 @@ const EMOTION_COLORS: Record<string, string> = {
 
 interface Props {
     spot: SpotRow;
-    loves: LoveRow[];
+    bubbles: PhotoBubble[];
     centerPosition: { x: number; y: number };
     onClose: () => void;
     onPhotoClick: (index: number) => void;
 }
 
-export function SpotPhotoBubbles({ spot, loves, centerPosition, onClose, onPhotoClick }: Props) {
+export function SpotPhotoBubbles({ spot, bubbles, centerPosition, onClose, onPhotoClick }: Props) {
     const RADIUS = 80;
-    const count = loves.length;
+    const count = bubbles.length;
 
     return (
         <div
@@ -51,15 +51,15 @@ export function SpotPhotoBubbles({ spot, loves, centerPosition, onClose, onPhoto
             </motion.div>
 
             {/* 写真バブル */}
-            {loves.map((love, i) => {
+            {bubbles.map((bubble, i) => {
                 const angle = count > 0 ? (2 * Math.PI * i) / count - Math.PI / 2 : 0;
                 const x = centerPosition.x + RADIUS * Math.cos(angle);
                 const y = centerPosition.y + RADIUS * Math.sin(angle);
-                const color = EMOTION_COLORS[love.emotion] ?? GOLD;
+                const color = EMOTION_COLORS[bubble.emotion] ?? GOLD;
 
                 return (
                     <motion.div
-                        key={love.id}
+                        key={bubble.id}
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: i * 0.05, type: "spring", stiffness: 400, damping: 20 }}
@@ -79,10 +79,10 @@ export function SpotPhotoBubbles({ spot, loves, centerPosition, onClose, onPhoto
                             onPhotoClick(i);
                         }}
                     >
-                        {love.photo_url ? (
+                        {bubble.photo_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                                src={love.photo_url}
+                                src={bubble.photo_url}
                                 alt=""
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             />
