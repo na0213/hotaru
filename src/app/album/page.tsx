@@ -11,6 +11,7 @@ import { BG, BG_CARD, GOLD, WHITE, GRAY, ORANGE, BLUE, PINK } from "@/constants/
 import type { Database } from "@/lib/database.types";
 import { CardDetailModal, type LoveWithSpot } from "@/components/CardDetailModal";
 import { EmotionBar } from "@/components/EmotionBar";
+import { FireflyForest } from "@/components/FireflyForest";
 
 type TripRow = Database["public"]["Tables"]["trips"]["Row"];
 
@@ -98,7 +99,7 @@ function TripSection({
     onCardTap: (love: LoveWithSpot) => void;
 }) {
     return (
-        <div className="mb-8">
+        <div id={`trip-${trip.id}`} className="mb-8">
             <div className="px-6 mb-3">
                 <h2 className="text-base font-bold" style={{ color: WHITE }}>
                     {trip.title || "無題の旅"}
@@ -246,6 +247,16 @@ export default function AlbumPage() {
                     {totalLoves}箇所に愛を灯しました
                 </p>
             </div>
+
+            {/* 蛍の森 */}
+            {trips.length > 0 && (
+                <div className="px-6 mb-6">
+                    <p className="text-sm font-bold mb-3" style={{ color: GOLD }}>
+                        あなたの旅から生まれた蛍たち
+                    </p>
+                    <FireflyForest trips={trips} />
+                </div>
+            )}
 
             {/* 旅の記録中セクション */}
             {activeTripId && (

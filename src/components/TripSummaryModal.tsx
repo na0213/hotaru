@@ -29,6 +29,13 @@ export function TripSummaryModal({ trip, onClose }: TripSummaryModalProps) {
     const total = counts.reduce((s, c) => s + c.count, 0);
     const maxCount = Math.max(...counts.map((c) => c.count));
 
+    // 最多感情の色（蛍の色）
+    const topEmotion = counts.find((c) => c.count === maxCount && maxCount > 0);
+    const fireflyColor =
+        total === 0 || !topEmotion || counts.filter((c) => c.count === maxCount).length > 1
+            ? GOLD
+            : EMOTION_COLORS[topEmotion.key];
+
     // 最も多い感情のメッセージ
     const getMessage = (): string => {
         if (total === 0) return "素敵な旅でしたね。";
@@ -120,6 +127,36 @@ export function TripSummaryModal({ trip, onClose }: TripSummaryModalProps) {
                         </div>
                     );
                 })}
+            </motion.div>
+
+            {/* 蛍が生まれる瞬間 */}
+            <motion.div
+                className="relative mb-4 flex flex-col items-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+            >
+                <motion.div
+                    initial={{ opacity: 0, scale: 0, y: 0 }}
+                    animate={{ opacity: [0, 1, 1, 0], scale: [0, 1.5, 1, 0.5], y: -150 }}
+                    transition={{ duration: 2, delay: 0.5, ease: "easeOut" }}
+                    style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        background: fireflyColor,
+                        boxShadow: `0 0 16px ${fireflyColor}, 0 0 32px ${fireflyColor}60`,
+                    }}
+                />
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.8 }}
+                    className="text-xs mt-1"
+                    style={{ color: fireflyColor }}
+                >
+                    新しい蛍が森に帰りました
+                </motion.p>
             </motion.div>
 
             {/* メッセージ */}
