@@ -81,6 +81,7 @@ export default function MapView() {
     const [mySpotIds, setMySpotIds] = useState<string[]>([]);
     const [loadingSpot, setLoadingSpot] = useState(false);
     const [glowReady, setGlowReady] = useState(false);
+    const [mapReady, setMapReady] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapRef = useRef<any>(null);
 
@@ -226,6 +227,10 @@ export default function MapView() {
 
     const handleMapReady = useCallback((map: LeafletMap) => {
         setMapInstance(map);
+        // タイル読み込み完了を待って有効化
+        map.whenReady(() => {
+            setTimeout(() => setMapReady(true), 500);
+        });
     }, []);
 
     const mapCenter = userLocation ?? DEFAULT_CENTER;
@@ -285,7 +290,7 @@ export default function MapView() {
                 )}
 
                 {/* ── クリック用透明マーカー（Three.jsに描画を委譲） ── */}
-                {filteredSpots.map((spot) => {
+                {mapReady && filteredSpots.map((spot) => {
                     const radius = Math.max(Math.min(5 + Math.sqrt(spot.love_count) * 1.2, 25), 30);
                     return (
                         <CircleMarker
@@ -323,14 +328,16 @@ export default function MapView() {
             </MapContainer>
 
             {/* ── 光の粒子レイヤー（Three.js） ── */}
-            <HotaruGlow
-                spots={filteredSpots}
-                mapInstance={mapInstance}
-                onReady={() => setGlowReady(true)}
-            />
+            {mapReady && (
+                <HotaruGlow
+                    spots={filteredSpots}
+                    mapInstance={mapInstance}
+                    onReady={() => setGlowReady(true)}
+                />
+            )}
 
-            {/* ── Three.js初期化待機オーバーレイ ── */}
-            {!glowReady && (
+            {/* ── ローディングオーバーレイ ── */}
+            {(!mapReady || !glowReady) && (
                 <div
                     className="absolute inset-0 z-[600] flex flex-col items-center justify-center gap-3"
                     style={{ background: "#0B1026CC" }}
