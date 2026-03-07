@@ -231,7 +231,10 @@ export default function MapView() {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     map.invalidateSize();
-                    setMapReady(true);
+                    // さらに1フレーム待ってからCircleMarkerを描画
+                    requestAnimationFrame(() => {
+                        setMapReady(true);
+                    });
                 });
             });
         });
