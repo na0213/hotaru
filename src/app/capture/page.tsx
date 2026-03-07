@@ -416,9 +416,14 @@ async function upsertSpot(params: {
             };
             const primaryEmotion = (Object.entries(counts) as [string, number][])
                 .reduce((a, b) => a[1] >= b[1] ? a : b)[0];
+            const updatePayload: Record<string, unknown> = { primary_emotion: primaryEmotion };
+            // first_photo_url が未設定なら今回の写真で埋める
+            if (!existingSpot.first_photo_url) {
+                updatePayload.first_photo_url = photoUrl;
+            }
             await supabase
                 .from("spots")
-                .update({ primary_emotion: primaryEmotion })
+                .update(updatePayload)
                 .eq("id", existingSpot.id);
         }
 

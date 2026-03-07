@@ -74,17 +74,37 @@ export function SpotPetalView({ spot, onClose }: SpotPetalViewProps) {
                         </div>
 
                         <div className="px-5 pb-6">
-                            {/* 写真 */}
-                            {spot.first_photo_url && (
-                                <div className="mb-4 overflow-hidden rounded-2xl">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {/* 写真 or グラデーション */}
+                            <div
+                                className="mb-4 overflow-hidden rounded-2xl"
+                                style={{ height: 192 }}
+                            >
+                                {spot.first_photo_url ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img
                                         src={spot.first_photo_url}
                                         alt="スポットの写真"
-                                        className="h-48 w-full object-cover"
+                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = "none";
+                                        }}
                                     />
-                                </div>
-                            )}
+                                ) : (
+                                    <div
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            background: `linear-gradient(135deg, ${emotionDef.color}40, ${emotionDef.color}10)`,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: 48,
+                                        }}
+                                    >
+                                        {emotionDef.emoji}
+                                    </div>
+                                )}
+                            </div>
 
                             {/* 感情ラベル */}
                             <div className="mb-3 flex items-center gap-2">

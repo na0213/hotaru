@@ -18,12 +18,12 @@ import { type Emotion } from "@/types";
 import { GOLD, BG_CARD, WHITE, GRAY } from "@/constants/colors";
 import { EnableTap } from "@/components/EnableTap";
 import { SpotPhotoBubbles } from "@/components/SpotPhotoBubbles";
-import { PhotoGalleryModal } from "@/components/PhotoGalleryModal";
+import { LoveCardModal } from "@/components/LoveCardModal";
 import { HotaruGlow } from "@/components/HotaruGlow";
 import type { Database } from "@/lib/database.types";
 
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
-type SpotPhoto = Database["public"]["Tables"]["spot_photos"]["Row"];
+type LoveRow = Database["public"]["Tables"]["loves"]["Row"];
 
 /** 感情カラーマップ */
 const EMOTION_COLORS: Record<string, string> = {
@@ -58,11 +58,11 @@ function MapRefCapture({
 
 export default function MapView() {
     const [spots, setSpots] = useState<SpotRow[]>([]);
-    const [spotPhotos, setSpotPhotos] = useState<Record<string, SpotPhoto[]>>({});
     const [filter, setFilter] = useState<FilterType>("all");
     const [selectedSpot, setSelectedSpot] = useState<SpotRow | null>(null);
     const [spotScreenPos, setSpotScreenPos] = useState<{ x: number; y: number } | null>(null);
-    const [selectedPhoto, setSelectedPhoto] = useState<{ photos: SpotPhoto[]; index: number } | null>(null);
+    const [spotLoves, setSpotLoves] = useState<LoveRow[]>([]);
+    const [selectedLoveIndex, setSelectedLoveIndex] = useState<number | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [japanGeo, setJapanGeo] = useState<any>(null);
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -90,22 +90,14 @@ export default function MapView() {
         );
     }, []);
 
-    // ── spots + spot_photos 取得 ──
+    // ── spots 取得 ──
     useEffect(() => {
         (async () => {
-            const [{ data, error }, { data: photosData }] = await Promise.all([
-                supabase.from("spots").select("*").order("created_at", { ascending: false }),
-                supabase.from("spot_photos").select("*").order("sort_order", { ascending: true }),
-            ]);
+            const { data, error } = await supabase
+                .from("spots")
+                .select("*")
+                .order("created_at", { ascending: false });
             if (!error && data) setSpots(data);
-            if (photosData) {
-                const map: Record<string, SpotPhoto[]> = {};
-                photosData.forEach((p) => {
-                    if (!map[p.spot_id]) map[p.spot_id] = [];
-                    map[p.spot_id].push(p);
-                });
-                setSpotPhotos(map);
-            }
         })();
     }, []);
 
@@ -141,12 +133,32 @@ export default function MapView() {
             ? spots.filter((s) => mySpotIds.has(s.id))
             : spots.filter((s) => s.primary_emotion === filter);
 
-    const handleSpotClick = useCallback((spot: SpotRow) => {
+    const handleSpotClick = useCallback(async (spot: SpotRow) => {
+        // 前の選択をリセット
+        setSelectedLoveIndex(null);
+        setSpotLoves([]);
         setSelectedSpot(spot);
+
         if (mapRef.current) {
             const point = mapRef.current.latLngToContainerPoint([spot.lat, spot.lng]);
             setSpotScreenPos({ x: point.x, y: point.y });
         }
+
+        const { data } = await supabase
+            .from("loves")
+            .select("*")
+            .eq("spot_id", spot.id)
+            .not("photo_url", "is", null)
+            .order("recorded_at", { ascending: false })
+            .limit(8);
+        setSpotLoves(data ?? []);
+    }, []);
+
+    const handleBubbleClose = useCallback(() => {
+        setSelectedSpot(null);
+        setSpotScreenPos(null);
+        setSpotLoves([]);
+        setSelectedLoveIndex(null);
     }, []);
 
     const handleMapReady = useCallback((map: LeafletMap) => {
@@ -225,7 +237,7 @@ export default function MapView() {
                                 weight: 15,
                             }}
                             eventHandlers={{
-                                click: () => handleSpotClick(spot),
+                                click: () => { handleSpotClick(spot); },
                             }}
                         />
                     );
@@ -364,30 +376,22 @@ export default function MapView() {
                 {selectedSpot && spotScreenPos && (
                     <SpotPhotoBubbles
                         spot={selectedSpot}
-                        photos={spotPhotos[selectedSpot.id] ?? []}
+                        loves={spotLoves}
                         centerPosition={spotScreenPos}
-                        onClose={() => {
-                            setSelectedSpot(null);
-                            setSpotScreenPos(null);
-                        }}
-                        onPhotoClick={(index) => {
-                            setSelectedPhoto({
-                                photos: spotPhotos[selectedSpot.id] ?? [],
-                                index,
-                            });
-                        }}
+                        onClose={handleBubbleClose}
+                        onPhotoClick={(index) => setSelectedLoveIndex(index)}
                     />
                 )}
             </AnimatePresence>
 
-            {/* ── 写真ギャラリーモーダル ── */}
+            {/* ── 写真カードモーダル ── */}
             <AnimatePresence>
-                {selectedPhoto && selectedSpot && (
-                    <PhotoGalleryModal
-                        photos={selectedPhoto.photos}
-                        initialIndex={selectedPhoto.index}
+                {selectedLoveIndex !== null && spotLoves.length > 0 && selectedSpot && (
+                    <LoveCardModal
+                        loves={spotLoves}
+                        initialIndex={selectedLoveIndex}
                         spot={selectedSpot}
-                        onClose={() => setSelectedPhoto(null)}
+                        onClose={() => setSelectedLoveIndex(null)}
                     />
                 )}
             </AnimatePresence>

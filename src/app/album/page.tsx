@@ -215,6 +215,7 @@ export default function AlbumPage() {
     const totalLoves = Object.values(lovesByTrip).reduce((s, ls) => s + ls.length, 0);
     const activeLoves = activeTripId ? (lovesByTrip[activeTripId] ?? []) : [];
 
+
     if (loading) {
         return (
             <div

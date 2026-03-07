@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import type { Database } from "@/lib/database.types";
 import { GOLD, GRAY } from "@/constants/colors";
 
+type LoveRow = Database["public"]["Tables"]["loves"]["Row"];
 type SpotRow = Database["public"]["Tables"]["spots"]["Row"];
-type SpotPhoto = Database["public"]["Tables"]["spot_photos"]["Row"];
 
 const EMOTION_COLORS: Record<string, string> = {
     tanoshii: "#F97316",
@@ -13,54 +13,17 @@ const EMOTION_COLORS: Record<string, string> = {
     nokoshitai: "#F472B6",
 };
 
-interface SpotPhotoBubblesProps {
+interface Props {
     spot: SpotRow;
-    photos: SpotPhoto[];
+    loves: LoveRow[];
     centerPosition: { x: number; y: number };
     onClose: () => void;
     onPhotoClick: (index: number) => void;
 }
 
-function getLayout(count: number): { radius: number; indices: number[] }[] {
-    if (count <= 3) {
-        return [{ radius: 80, indices: Array.from({ length: count }, (_, i) => i) }];
-    } else if (count <= 6) {
-        return [{ radius: 100, indices: Array.from({ length: count }, (_, i) => i) }];
-    } else {
-        const half = Math.ceil(count / 2);
-        return [
-            { radius: 80, indices: Array.from({ length: half }, (_, i) => i) },
-            { radius: 140, indices: Array.from({ length: count - half }, (_, i) => i + half) },
-        ];
-    }
-}
-
-export function SpotPhotoBubbles({
-    spot,
-    photos,
-    centerPosition,
-    onClose,
-    onPhotoClick,
-}: SpotPhotoBubblesProps) {
-    const color = EMOTION_COLORS[spot.primary_emotion] ?? GOLD;
-    const layout = getLayout(photos.length);
-
-    const positioned: { photo: SpotPhoto; x: number; y: number; index: number; delay: number }[] = [];
-    let delayIndex = 0;
-    for (const ring of layout) {
-        const count = ring.indices.length;
-        ring.indices.forEach((photoIndex, i) => {
-            const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-            positioned.push({
-                photo: photos[photoIndex],
-                x: centerPosition.x + ring.radius * Math.cos(angle),
-                y: centerPosition.y + ring.radius * Math.sin(angle),
-                index: photoIndex,
-                delay: delayIndex * 0.05,
-            });
-            delayIndex++;
-        });
-    }
+export function SpotPhotoBubbles({ spot, loves, centerPosition, onClose, onPhotoClick }: Props) {
+    const RADIUS = 80;
+    const count = loves.length;
 
     return (
         <div
@@ -87,61 +50,69 @@ export function SpotPhotoBubbles({
                 </span>
             </motion.div>
 
-            {/* 写真0枚フォールバック */}
-            {photos.length === 0 ? (
+            {/* 写真バブル */}
+            {loves.map((love, i) => {
+                const angle = count > 0 ? (2 * Math.PI * i) / count - Math.PI / 2 : 0;
+                const x = centerPosition.x + RADIUS * Math.cos(angle);
+                const y = centerPosition.y + RADIUS * Math.sin(angle);
+                const color = EMOTION_COLORS[love.emotion] ?? GOLD;
+
+                return (
+                    <motion.div
+                        key={love.id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: i * 0.05, type: "spring", stiffness: 400, damping: 20 }}
+                        className="absolute cursor-pointer overflow-hidden"
+                        style={{
+                            left: x,
+                            top: y,
+                            width: 50,
+                            height: 50,
+                            borderRadius: "50%",
+                            transform: "translate(-50%, -50%)",
+                            border: `2px solid ${color}`,
+                            boxShadow: `0 0 10px ${color}88, 0 0 20px ${color}44`,
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onPhotoClick(i);
+                        }}
+                    >
+                        {love.photo_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={love.photo_url}
+                                alt=""
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                        ) : (
+                            <div style={{ width: "100%", height: "100%", background: color }} />
+                        )}
+                    </motion.div>
+                );
+            })}
+
+            {/* 写真なしフォールバック */}
+            {count === 0 && (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="absolute flex h-16 w-16 items-center justify-center rounded-full text-xs"
+                    className="absolute flex items-center justify-center rounded-full text-lg"
                     style={{
                         left: centerPosition.x,
                         top: centerPosition.y - 80,
+                        width: 50,
+                        height: 50,
                         transform: "translate(-50%, -50%)",
                         background: "#1A1A35",
-                        border: `2px solid ${color}`,
+                        border: `2px solid ${GOLD}`,
                         color: GRAY,
                     }}
                 >
-                    写真なし
+                    📷
                 </motion.div>
-            ) : null}
-
-            {/* 写真バブル */}
-            {positioned.map(({ photo, x, y, index, delay }) => {
-                const photoColor = photo.emotion
-                    ? (EMOTION_COLORS[photo.emotion] ?? "#F59E0B")
-                    : "#F59E0B";
-                return (
-                <motion.div
-                    key={photo.id}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay, type: "spring", stiffness: 400, damping: 20 }}
-                    className="absolute cursor-pointer overflow-hidden"
-                    style={{
-                        left: x,
-                        top: y,
-                        width: 55,
-                        height: 55,
-                        borderRadius: "50%",
-                        transform: "translate(-50%, -50%)",
-                        border: `2px solid ${photoColor}`,
-                        boxShadow: `0 0 12px ${photoColor}88, 0 0 24px ${photoColor}44`,
-                    }}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onPhotoClick(index);
-                    }}
-                >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={photo.photo_url}
-                        alt={photo.caption ?? "スポットの写真"}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                </motion.div>
-                );
-            })}
+            )}
         </div>
     );
 }
