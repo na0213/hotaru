@@ -110,6 +110,20 @@ export default function Home() {
     }
   }, []);
 
+  // ── 旅をキャンセル（DBから削除） ──
+  const handleCancelTrip = useCallback(async () => {
+    const confirmed = window.confirm("旅の記録を破棄しますか？この旅は保存されません。");
+    if (!confirmed) return;
+
+    const tripId = getCurrentTripId();
+    if (tripId) {
+      await supabase.from("trips").delete().eq("id", tripId);
+    }
+
+    endTrip();
+    setOnTrip(false);
+  }, []);
+
   // ── サマリーを閉じる → ホーム復帰 ──
   const handleSummaryClose = useCallback(() => {
     setShowSummaryModal(false);
@@ -243,17 +257,26 @@ export default function Home() {
               onClick={() => router.push("/album")}
             />
 
-            <div
-              role="button"
-              onClick={handleEndTrip}
-              className="mt-4 cursor-pointer rounded-xl px-6 py-2 text-sm transition-transform active:scale-95"
-              style={{
-                color: GRAY,
-                border: `1px solid ${GRAY}40`,
-                opacity: loading ? 0.5 : 1,
-              }}
-            >
-              {loading ? "終了中..." : "旅をおわる"}
+            <div className="mt-4 flex flex-col items-center gap-2">
+              <div
+                role="button"
+                onClick={handleEndTrip}
+                className="cursor-pointer rounded-xl px-6 py-2 text-sm transition-transform active:scale-95"
+                style={{
+                  color: GRAY,
+                  border: `1px solid ${GRAY}40`,
+                  opacity: loading ? 0.5 : 1,
+                }}
+              >
+                {loading ? "終了中..." : "旅をおわる"}
+              </div>
+              <button
+                onClick={handleCancelTrip}
+                className="text-xs underline"
+                style={{ color: "rgba(255,255,255,0.4)" }}
+              >
+                記録せずにやめる
+              </button>
             </div>
           </>
         )}
