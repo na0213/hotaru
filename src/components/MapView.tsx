@@ -41,7 +41,7 @@ const EMOTION_COLORS: Record<string, string> = {
     nokoshitai: "#F472B6",
 };
 
-type FilterType = Emotion | "all" | "my";
+type EmotionFilter = Emotion | "all";
 
 /** デフォルト: 日本全体 */
 const DEFAULT_CENTER: [number, number] = [36.5, 137.5];
@@ -67,7 +67,8 @@ function MapRefCapture({
 
 export default function MapView() {
     const [spots, setSpots] = useState<SpotRow[]>([]);
-    const [filter, setFilter] = useState<FilterType>("all");
+    const [showMyOnly, setShowMyOnly] = useState(false);
+    const [emotionFilter, setEmotionFilter] = useState<'all' | 'tanoshii' | 'utsukushii' | 'nokoshitai'>('all');
     const [selectedSpot, setSelectedSpot] = useState<SpotRow | null>(null);
     const [spotScreenPos, setSpotScreenPos] = useState<{ x: number; y: number } | null>(null);
     const [bubbles, setBubbles] = useState<PhotoBubble[]>([]);
@@ -77,7 +78,7 @@ export default function MapView() {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [loadingLocation, setLoadingLocation] = useState(true);
     const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
-    const [mySpotIds, setMySpotIds] = useState<Set<string>>(new Set());
+    const [mySpotIds, setMySpotIds] = useState<string[]>([]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapRef = useRef<any>(null);
 
@@ -112,13 +113,15 @@ export default function MapView() {
 
     // ── 自分のloves（spot_id）取得 ──
     useEffect(() => {
-        (async () => {
+        const fetchMySpotIds = async () => {
+            const userId = getUserId();
             const { data } = await supabase
                 .from("loves")
                 .select("spot_id")
-                .eq("user_id", getUserId());
-            if (data) setMySpotIds(new Set(data.map((d) => d.spot_id)));
-        })();
+                .eq("user_id", userId);
+            setMySpotIds(data?.map((l) => l.spot_id as string) ?? []);
+        };
+        fetchMySpotIds();
     }, []);
 
     // ── japan.geojson読み込み（オプション） ──
@@ -135,12 +138,21 @@ export default function MapView() {
     }, []);
 
     // ── フィルター済みスポット ──
-    const filteredSpots =
-        filter === "all"
-            ? spots
-            : filter === "my"
-            ? spots.filter((s) => mySpotIds.has(s.id))
-            : spots.filter((s) => s.primary_emotion === filter);
+    const filteredSpots = spots.filter((spot) => {
+        if (showMyOnly) return mySpotIds.includes(spot.id);
+        if (emotionFilter !== "all") return spot.primary_emotion === emotionFilter;
+        return true;
+    });
+
+    // ── デバッグログ ──
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+        console.log(
+            "[filter] showMyOnly:", showMyOnly,
+            "emotionFilter:", emotionFilter,
+            "filteredSpots:", filteredSpots.length
+        );
+    }, [showMyOnly, emotionFilter, filteredSpots]);
 
     const handleSpotClick = useCallback(async (spot: SpotRow) => {
         setSelectedBubbleIndex(null);
@@ -338,11 +350,11 @@ export default function MapView() {
                     {/* ALL ボタン */}
                     <div
                         role="button"
-                        onClick={() => setFilter("all")}
+                        onClick={() => { setShowMyOnly(false); setEmotionFilter("all"); }}
                         className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold tracking-wider transition-all"
                         style={{
-                            color: filter === "all" ? WHITE : GRAY,
-                            background: filter === "all" ? "rgba(255,255,255,0.15)" : "transparent",
+                            color: !showMyOnly && emotionFilter === "all" ? WHITE : GRAY,
+                            background: !showMyOnly && emotionFilter === "all" ? "rgba(255,255,255,0.15)" : "transparent",
                         }}
                     >
                         ALL
@@ -351,12 +363,12 @@ export default function MapView() {
                     {/* MY ボタン */}
                     <div
                         role="button"
-                        onClick={() => setFilter(filter === "my" ? "all" : "my")}
+                        onClick={() => setShowMyOnly((prev) => !prev)}
                         className="cursor-pointer rounded-full px-3 py-1 text-xs font-bold tracking-wider transition-all"
                         style={{
-                            color: filter === "my" ? "#F59E0B" : GRAY,
-                            background: filter === "my" ? "rgba(245, 158, 11, 0.15)" : "transparent",
-                            border: filter === "my" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
+                            color: showMyOnly ? "#F59E0B" : GRAY,
+                            background: showMyOnly ? "rgba(245, 158, 11, 0.15)" : "transparent",
+                            border: showMyOnly ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
                         }}
                     >
                         MY
@@ -364,7 +376,7 @@ export default function MapView() {
 
                     {/* 感情ドット */}
                     {(["tanoshii", "utsukushii", "nokoshitai"] as const).map((emotion) => {
-                        const isActive = filter === emotion;
+                        const isActive = emotionFilter === emotion;
                         const color = EMOTION_COLORS[emotion];
                         const label = emotion === "tanoshii" ? "たのしい" : emotion === "utsukushii" ? "うつくしい" : "のこしたい";
 
@@ -372,7 +384,11 @@ export default function MapView() {
                             <motion.div
                                 key={emotion}
                                 role="button"
-                                onClick={() => setFilter(isActive ? "all" : emotion)}
+                                onClick={() => {
+                                    const next = emotionFilter === emotion ? 'all' : emotion;
+                                    setEmotionFilter(next);
+                                    setShowMyOnly(false);
+                                }}
                                 className="flex cursor-pointer items-center gap-1.5 rounded-full transition-all"
                                 style={{
                                     padding: isActive ? "4px 12px 4px 8px" : "4px",

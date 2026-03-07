@@ -3,8 +3,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/lib/supabase";
-import { getUserId } from "@/lib/userId";
+import { supabase, signOut } from "@/lib/supabase";
+import { getUserId, syncUserId } from "@/lib/userId";
 import {
   isOnTrip,
   getCurrentTripId,
@@ -16,6 +16,7 @@ import { TitleInputModal } from "@/components/TitleInputModal";
 import { TripSummaryModal } from "@/components/TripSummaryModal";
 import { startNearbyWatch, stopNearbyWatch } from "@/lib/nearbyCheck";
 import type { Database } from "@/lib/database.types";
+import type { User } from "@supabase/supabase-js";
 
 type TripRow = Database["public"]["Tables"]["trips"]["Row"];
 
@@ -26,10 +27,22 @@ export default function Home() {
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [summaryData, setSummaryData] = useState<TripRow | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     setOnTrip(isOnTrip());
+    // ログインユーザー情報を取得し、user_idを同期
+    syncUserId();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
   }, []);
+
+  // ログアウト処理
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+    router.push("/login");
+  }, [router]);
 
   // 通知ONの場合はアプリ起動時から常に位置監視を開始
   useEffect(() => {
@@ -109,6 +122,34 @@ export default function Home() {
       className="flex min-h-dvh flex-col items-center justify-center px-6"
       style={{ background: `linear-gradient(180deg, #0B1026 0%, #12122A 100%)` }}
     >
+      {/* ユーザー情報 + ログアウト */}
+      {user && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          {user.user_metadata?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.user_metadata.avatar_url}
+              alt="avatar"
+              className="h-8 w-8 rounded-full object-cover"
+              style={{ border: `1.5px solid ${GOLD}60` }}
+            />
+          ) : (
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+              style={{ background: GOLD, color: "#0B1026" }}
+            >
+              {(user.user_metadata?.name ?? user.email ?? "U")[0].toUpperCase()}
+            </div>
+          )}
+          <button
+            onClick={handleSignOut}
+            className="rounded-lg px-3 py-1 text-xs font-medium transition-opacity hover:opacity-70"
+            style={{ color: GRAY, border: `1px solid ${GRAY}30` }}
+          >
+            ログアウト
+          </button>
+        </div>
+      )}
       {/* 旅セッション中バナー */}
       <AnimatePresence>
         {onTrip && (
