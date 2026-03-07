@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import "leaflet/dist/leaflet.css";
 import type { Map as LeafletMap } from "leaflet";
+import * as L from "leaflet";
 
 import { supabase } from "@/lib/supabase";
 import { getUserId } from "@/lib/userId";
@@ -62,6 +63,37 @@ function MapRefCapture({
         mapRef.current = map;
         onMap(map);
     }, [map, mapRef, onMap]);
+    return null;
+}
+function MapClickHandler({
+    spots,
+    onSpotClick,
+}: {
+    spots: SpotRow[];
+    onSpotClick: (spot: SpotRow) => void;
+}) {
+    const map = useMap();
+    useEffect(() => {
+        if (!map) return;
+        const handler = (e: L.LeafletMouseEvent) => {
+            const clickPt = e.containerPoint;
+            let nearest: SpotRow | null = null;
+            let minDist = 999;
+            spots.forEach((spot) => {
+                const pt = map.latLngToContainerPoint([spot.lat, spot.lng]);
+                const dist = Math.sqrt(
+                    Math.pow(clickPt.x - pt.x, 2) + Math.pow(clickPt.y - pt.y, 2)
+                );
+                if (dist < minDist && dist < 50) {
+                    minDist = dist;
+                    nearest = spot;
+                }
+            });
+            if (nearest) onSpotClick(nearest);
+        };
+        map.on("click", handler);
+        return () => { map.off("click", handler); };
+    }, [map, spots, onSpotClick]);
     return null;
 }
 
@@ -289,6 +321,7 @@ export default function MapView() {
             >
                 <EnableTap />
                 <MapRefCapture mapRef={mapRef} onMap={handleMapReady} />
+                <MapClickHandler spots={filteredSpots} onSpotClick={handleSpotClick} />
 
                 {/* ダークタイル */}
                 <TileLayer
