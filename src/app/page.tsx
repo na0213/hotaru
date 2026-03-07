@@ -175,10 +175,7 @@ export default function Home() {
         className="mb-12 text-center"
       >
         <h1 className="text-4xl font-bold tracking-tight">
-          <span style={{ color: GOLD }}>Hotaru</span>
-          <span className="ml-2 text-lg" style={{ color: GRAY }}>
-            蛍
-          </span>
+          <span style={{ color: WHITE }}>Hotaru</span>
         </h1>
         <p className="mt-3 text-sm" style={{ color: GRAY }}>
           旅の記憶を、蛍の光として灯す。

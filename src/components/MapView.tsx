@@ -376,11 +376,34 @@ export default function MapView() {
             <div className="absolute left-0 right-0 top-0 z-[500] flex items-center justify-between px-4 py-3">
                 <a
                     href="/"
-                    className="text-sm no-underline"
-                    style={{ color: GRAY }}
+                    className="no-underline flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
+                    style={{
+                        color: GRAY,
+                        background: "rgba(255,255,255,0.06)",
+                        border: `1px solid rgba(255,255,255,0.1)`,
+                        backdropFilter: "blur(8px)",
+                    }}
                 >
-                    ← ホーム
+                    🏠 ホーム
                 </a>
+                {/* 日本全体ボタン ← 追加 */}
+                <div
+                    role="button"
+                    onClick={() => {
+                        if (mapInstance) {
+                            mapInstance.setView([36.5, 137.5], 5, { animate: true });
+                        }
+                    }}
+                    className="cursor-pointer flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
+                    style={{
+                        color: GRAY,
+                        background: "rgba(255,255,255,0.08)",
+                        border: `1px solid rgba(255,255,255,0.1)`,
+                        backdropFilter: "blur(8px)",
+                    }}
+                >
+                    🗾 全体
+                </div>
                 <span className="text-xs font-bold" style={{ color: GOLD }}>
                     ✨ {spots.length} spots
                 </span>

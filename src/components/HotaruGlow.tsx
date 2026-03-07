@@ -34,8 +34,8 @@ const vertexShader = `
   uniform float uTime;
   void main() {
     vColor = aColor;
-    vAlpha = 0.8 + 0.2 * sin(uTime * 1.0 + aPhase);
-    vBrightness = 0.6 + 0.4 * smoothstep(10.0, 80.0, aSize);
+    vAlpha = 0.9 + 0.1 * sin(uTime * 1.0 + aPhase);
+    vBrightness = 0.8 + 0.2 * smoothstep(10.0, 80.0, aSize);
     vec3 pos = position;
     pos.x += sin(uTime * 0.7 + aPhase) * 1.5;
     pos.y += cos(uTime * 0.5 + aPhase * 1.3) * 1.5;
@@ -106,7 +106,7 @@ function rebuildScene(
         colors[i * 3 + 1] = rgb[1];
         colors[i * 3 + 2] = rgb[2];
 
-        const baseSize = Math.min(10 + Math.sqrt(spot.love_count) * 4, 80);
+        const baseSize = Math.min(14 + Math.sqrt(spot.love_count) * 5, 90);
         const scale = Math.pow(1.25, zoom - 5);
         sizes[i] = Math.min(baseSize * scale, 80);
         phases[i] = (spot.id.charCodeAt(0) / 255) * Math.PI * 2;

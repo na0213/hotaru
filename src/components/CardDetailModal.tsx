@@ -122,7 +122,7 @@ export function CardDetailModal({ love, onClose, onEmotionChange }: CardDetailMo
 
                     {love.spots?.love_count !== undefined && love.spots.love_count > 0 && (
                         <p className="text-xs" style={{ color: GRAY }}>
-                            🌟 {love.spots.love_count}人が愛を灯した場所
+                            🌟 {love.spots.love_count}人が光を灯した場所
                         </p>
                     )}
                 </div>

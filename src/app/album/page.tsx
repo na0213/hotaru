@@ -237,14 +237,24 @@ export default function AlbumPage() {
                 className="sticky top-0 z-10 px-6 pt-12 pb-4"
                 style={{ background: `${BG}ee` }}
             >
-                <button onClick={() => router.back()} className="mb-4 text-xs" style={{ color: GRAY }}>
-                    ← 戻る
+                <button
+                    onClick={() => router.back()}
+                    className="mb-4 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"
+                    style={{
+                        color: GRAY,
+                        background: "rgba(255,255,255,0.06)",
+                        border: `1px solid rgba(255,255,255,0.1)`,
+                        backdropFilter: "blur(8px)",
+                    }}
+                >
+                    🏠 ホーム
                 </button>
+
                 <h1 className="text-xl font-bold" style={{ color: GOLD }}>
-                    愛のカードアルバム
+                    カードアルバム
                 </h1>
                 <p className="text-xs mt-1" style={{ color: GRAY }}>
-                    {totalLoves}箇所に愛を灯しました
+                    {totalLoves}箇所に光を灯しました
                 </p>
             </div>
 
@@ -252,7 +262,7 @@ export default function AlbumPage() {
             {trips.length > 0 && (
                 <div className="px-6 mb-6">
                     <p className="text-sm font-bold mb-3" style={{ color: GOLD }}>
-                        あなたの旅から生まれた蛍たち
+                        旅から生まれた蛍たち
                     </p>
                     <FireflyForest trips={trips} />
                 </div>

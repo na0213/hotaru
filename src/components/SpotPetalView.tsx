@@ -119,7 +119,7 @@ export function SpotPetalView({ spot, onClose }: SpotPetalViewProps) {
 
                             {/* love_count */}
                             <p className="mb-4 text-sm" style={{ color: GRAY }}>
-                                ✨ {spot.love_count}人が愛を灯した場所
+                                ✨ {spot.love_count}人が光を灯した場所
                             </p>
 
                             {/* place_name（行きたいボタンを押した後のみ表示） */}
