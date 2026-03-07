@@ -80,6 +80,7 @@ export default function MapView() {
     const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
     const [mySpotIds, setMySpotIds] = useState<string[]>([]);
     const [loadingSpot, setLoadingSpot] = useState(false);
+    const [glowReady, setGlowReady] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapRef = useRef<any>(null);
 
@@ -322,7 +323,30 @@ export default function MapView() {
             </MapContainer>
 
             {/* ── 光の粒子レイヤー（Three.js） ── */}
-            <HotaruGlow spots={filteredSpots} mapInstance={mapInstance} />
+            <HotaruGlow
+                spots={filteredSpots}
+                mapInstance={mapInstance}
+                onReady={() => setGlowReady(true)}
+            />
+
+            {/* ── Three.js初期化待機オーバーレイ ── */}
+            {!glowReady && (
+                <div
+                    className="absolute inset-0 z-[600] flex flex-col items-center justify-center gap-3"
+                    style={{ background: "#0B1026CC" }}
+                >
+                    <motion.div
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ repeat: Infinity, duration: 1.5 }}
+                        className="text-3xl"
+                    >
+                        🌟
+                    </motion.div>
+                    <p className="text-xs" style={{ color: "#94A3B8" }}>
+                        蛍を呼んでいます...
+                    </p>
+                </div>
+            )}
 
             {/* ── ヘッダー ── */}
             <div className="absolute left-0 right-0 top-0 z-[500] flex items-center justify-between px-4 py-3">

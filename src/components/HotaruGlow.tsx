@@ -14,6 +14,7 @@ type Spot = {
 type Props = {
     spots: Spot[];
     mapInstance: LeafletMap | null;
+    onReady?: () => void;
 };
 
 const EMOTION_RGB: Record<string, [number, number, number]> = {
@@ -129,7 +130,7 @@ function rebuildScene(
     scene.add(new THREE.Points(geometry, material));
 }
 
-export function HotaruGlow({ spots, mapInstance }: Props) {
+export function HotaruGlow({ spots, mapInstance, onReady }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const rafRef = useRef<number>(0);
     const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -169,6 +170,7 @@ export function HotaruGlow({ spots, mapInstance }: Props) {
             renderer.render(scene, camera);
         };
         animate();
+        onReady?.();
 
         const handleResize = () => {
             const nw = canvas.clientWidth;
