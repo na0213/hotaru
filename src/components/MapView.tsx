@@ -269,6 +269,20 @@ export default function MapView() {
                 className="h-full w-full"
                 zoomControl={false}
                 attributionControl={false}
+                zoomAnimation={true}
+                zoomAnimationThreshold={4}
+                fadeAnimation={true}
+                markerZoomAnimation={true}
+                inertia={true}
+                inertiaDeceleration={3000}
+                inertiaMaxSpeed={1500}
+                easeLinearity={0.2}
+                wheelDebounceTime={40}
+                wheelPxPerZoomLevel={60}
+                tap={false}
+                dragging={true}
+                touchZoom={true}
+                bounceAtZoomLimits={false}
             >
                 <EnableTap />
                 <MapRefCapture mapRef={mapRef} onMap={handleMapReady} />
