@@ -283,7 +283,7 @@ export default function MapView() {
                 touchZoom={true}
                 bounceAtZoomLimits={false}
             >
-                <EnableTap />
+                {/* <EnableTap /> */}
                 <MapRefCapture mapRef={mapRef} onMap={handleMapReady} />
 
                 {/* ダークタイル */}
