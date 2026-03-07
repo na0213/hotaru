@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+"use client";
+
 import dynamic from "next/dynamic";
 
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -13,12 +14,6 @@ const MapView = dynamic(() => import("@/components/MapView"), {
     ),
 });
 
-export default async function MapPage() {
-    const supabase = await createServerSupabaseClient();
-    const { data: initialSpots } = await supabase
-        .from("spots")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-    return <MapView initialSpots={initialSpots ?? []} />;
+export default function MapPage() {
+    return <MapView />;
 }
