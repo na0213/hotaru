@@ -279,7 +279,6 @@ export default function MapView() {
                 easeLinearity={0.2}
                 wheelDebounceTime={40}
                 wheelPxPerZoomLevel={60}
-                tap={false}
                 dragging={true}
                 touchZoom={true}
                 bounceAtZoomLimits={false}
@@ -307,11 +306,11 @@ export default function MapView() {
                 )}
 
                 {/* ── クリック用透明マーカー（Three.jsに描画を委譲） ── */}
-                {mapReady && filteredSpots.map((spot) => {
+                {mapReady && spots.length > 0 && filteredSpots.map((spot) => {
                     const radius = Math.max(Math.min(5 + Math.sqrt(spot.love_count) * 1.2, 25), 30);
                     return (
                         <CircleMarker
-                            key={`${spot.id}-${mapReady}`}
+                            key={`${spot.id}-${mapReady}-${spots.length}`}
                             center={[spot.lat, spot.lng]}
                             radius={radius}
                             pathOptions={{
@@ -354,7 +353,7 @@ export default function MapView() {
             )}
 
             {/* ── ローディングオーバーレイ ── */}
-            {(!mapReady || !glowReady) && (
+            {(!mapReady || !glowReady || spots.length === 0) && (
                 <div
                     className="absolute inset-0 z-[600] flex flex-col items-center justify-center gap-3"
                     style={{ background: "#0B1026CC" }}
