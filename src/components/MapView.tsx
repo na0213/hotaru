@@ -65,8 +65,12 @@ function MapRefCapture({
     return null;
 }
 
-export default function MapView() {
-    const [spots, setSpots] = useState<SpotRow[]>([]);
+type Props = {
+    initialSpots?: SpotRow[];
+};
+
+export default function MapView({ initialSpots = [] }: Props) {
+    const [spots, setSpots] = useState<SpotRow[]>(initialSpots);
     const [showMyOnly, setShowMyOnly] = useState(false);
     const [emotionFilter, setEmotionFilter] = useState<'all' | 'tanoshii' | 'utsukushii' | 'nokoshitai'>('all');
     const [selectedSpot, setSelectedSpot] = useState<SpotRow | null>(null);
@@ -101,8 +105,9 @@ export default function MapView() {
         );
     }, []);
 
-    // ── spots 取得 ──
+    // ── spots 取得（initialSpotsがある場合はスキップ） ──
     useEffect(() => {
+        if (initialSpots.length > 0) return;
         (async () => {
             const { data, error } = await supabase
                 .from("spots")
@@ -110,7 +115,7 @@ export default function MapView() {
                 .order("created_at", { ascending: false });
             if (!error && data) setSpots(data);
         })();
-    }, []);
+    }, [initialSpots.length]);
 
     // ── 自分のloves（spot_id）取得 ──
     useEffect(() => {
