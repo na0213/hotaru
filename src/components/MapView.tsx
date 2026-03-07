@@ -216,7 +216,7 @@ export default function MapView() {
         console.log("[Hotaru] bubbles to display:", result);
         setBubbles(result);
         setLoadingSpot(false);
-    }, []);
+    }, [mapRef]);
 
     const handleBubbleClose = useCallback(() => {
         setSelectedSpot(null);
@@ -227,9 +227,12 @@ export default function MapView() {
 
     const handleMapReady = useCallback((map: LeafletMap) => {
         setMapInstance(map);
-        // タイル読み込み完了を待って有効化
         map.whenReady(() => {
-            setTimeout(() => setMapReady(true), 500);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setMapReady(true);
+                });
+            });
         });
     }, []);
 
@@ -294,7 +297,7 @@ export default function MapView() {
                     const radius = Math.max(Math.min(5 + Math.sqrt(spot.love_count) * 1.2, 25), 30);
                     return (
                         <CircleMarker
-                            key={spot.id}
+                            key={`${spot.id}-${mapReady}`}
                             center={[spot.lat, spot.lng]}
                             radius={radius}
                             pathOptions={{

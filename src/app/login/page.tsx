@@ -52,7 +52,7 @@ export default function LoginPage() {
                 >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                        src="/icons/hotaru.png"
+                        src="/icons/hotaru2.png"
                         alt="hotaru"
                         style={{ width: 72, height: 72, objectFit: "contain" }}
                     />
