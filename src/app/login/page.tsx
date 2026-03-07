@@ -50,7 +50,12 @@ export default function LoginPage() {
                     className="mb-6 text-6xl"
                     style={{ filter: "drop-shadow(0 0 18px rgba(250,188,45,0.7))" }}
                 >
-                    🌟
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src="/icons/hotaru.png"
+                        alt="hotaru"
+                        style={{ width: 72, height: 72, objectFit: "contain" }}
+                    />
                 </motion.div>
 
                 <h1
@@ -59,12 +64,6 @@ export default function LoginPage() {
                 >
                     Hotaru
                 </h1>
-                <p
-                    className="mt-2 text-sm tracking-widest"
-                    style={{ color: "#666A8A" }}
-                >
-                    蛍
-                </p>
                 <p
                     className="mt-6 text-sm leading-relaxed"
                     style={{ color: "#9095B8" }}
