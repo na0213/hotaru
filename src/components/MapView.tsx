@@ -230,6 +230,7 @@ export default function MapView() {
         map.whenReady(() => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
+                    map.invalidateSize();
                     setMapReady(true);
                 });
             });
@@ -283,7 +284,7 @@ export default function MapView() {
                 touchZoom={true}
                 bounceAtZoomLimits={false}
             >
-                {/* <EnableTap /> */}
+                <EnableTap />
                 <MapRefCapture mapRef={mapRef} onMap={handleMapReady} />
 
                 {/* ダークタイル */}
@@ -344,13 +345,13 @@ export default function MapView() {
             </MapContainer>
 
             {/* ── 光の粒子レイヤー（Three.js） ── */}
-            {/* {mapReady && (
+            {mapReady && (
                 <HotaruGlow
                     spots={filteredSpots}
                     mapInstance={mapInstance}
                     onReady={() => setGlowReady(true)}
                 />
-            )} */}
+            )}
 
             {/* ── ローディングオーバーレイ ── */}
             {(!mapReady || !glowReady || spots.length === 0) && (
