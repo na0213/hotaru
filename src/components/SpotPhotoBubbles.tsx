@@ -19,9 +19,10 @@ interface Props {
     centerPosition: { x: number; y: number };
     onClose: () => void;
     onPhotoClick: (index: number) => void;
+    isLoading?: boolean;
 }
 
-export function SpotPhotoBubbles({ spot, bubbles, centerPosition, onClose, onPhotoClick }: Props) {
+export function SpotPhotoBubbles({ spot, bubbles, centerPosition, onClose, onPhotoClick, isLoading = false }: Props) {
     const RADIUS = 80;
     const count = bubbles.length;
 
@@ -93,8 +94,34 @@ export function SpotPhotoBubbles({ spot, bubbles, centerPosition, onClose, onPho
                 );
             })}
 
-            {/* 写真なしフォールバック */}
-            {count === 0 && (
+            {/* ローディングスピナー */}
+            {isLoading && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute flex items-center justify-center rounded-full"
+                    style={{
+                        left: centerPosition.x,
+                        top: centerPosition.y - 80,
+                        width: 50,
+                        height: 50,
+                        transform: "translate(-50%, -50%)",
+                        background: "#1A1A35",
+                        border: `2px solid ${GOLD}`,
+                    }}
+                >
+                    <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                        style={{ display: "inline-block", fontSize: 22 }}
+                    >
+                        ✨
+                    </motion.span>
+                </motion.div>
+            )}
+
+            {/* 写真なしフォールバック（ロード完了後・0件のとき） */}
+            {!isLoading && count === 0 && (
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
