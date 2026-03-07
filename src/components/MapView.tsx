@@ -344,13 +344,13 @@ export default function MapView() {
             </MapContainer>
 
             {/* ── 光の粒子レイヤー（Three.js） ── */}
-            {mapReady && (
+            {/* {mapReady && (
                 <HotaruGlow
                     spots={filteredSpots}
                     mapInstance={mapInstance}
                     onReady={() => setGlowReady(true)}
                 />
-            )}
+            )} */}
 
             {/* ── ローディングオーバーレイ ── */}
             {(!mapReady || !glowReady || spots.length === 0) && (
