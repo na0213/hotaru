@@ -62,7 +62,7 @@ export default function LoginPage() {
                     className="text-5xl font-bold tracking-tight"
                     style={{ color: "#FFFFFF" }}
                 >
-                    Hotaru
+                    H o t a r u
                 </h1>
                 <p
                     className="mt-6 text-sm leading-relaxed"
