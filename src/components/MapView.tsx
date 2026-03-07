@@ -197,7 +197,12 @@ export default function MapView() {
 
         if (mapRef.current) {
             const point = mapRef.current.latLngToContainerPoint([spot.lat, spot.lng]);
-            setSpotScreenPos({ x: point.x, y: point.y });
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const BUBBLE_SAFE_MARGIN = 80;
+            const clampedX = Math.min(Math.max(point.x, BUBBLE_SAFE_MARGIN), vw - BUBBLE_SAFE_MARGIN);
+            const clampedY = Math.min(Math.max(point.y, BUBBLE_SAFE_MARGIN), vh - BUBBLE_SAFE_MARGIN);
+            setSpotScreenPos({ x: clampedX, y: clampedY });
         }
 
         // loves と spot_photos を並行取得
@@ -428,6 +433,9 @@ export default function MapView() {
                     onClick={() => {
                         if (mapInstance) {
                             mapInstance.setView([36.5, 137.5], 5, { animate: true });
+                            setTimeout(() => {
+                                mapInstance.invalidateSize();
+                            }, 400);
                         }
                     }}
                     className="cursor-pointer flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium"

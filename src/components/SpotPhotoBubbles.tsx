@@ -54,8 +54,11 @@ export function SpotPhotoBubbles({ spot, bubbles, centerPosition, onClose, onPho
             {/* 写真バブル */}
             {bubbles.map((bubble, i) => {
                 const angle = count > 0 ? (2 * Math.PI * i) / count - Math.PI / 2 : 0;
-                const x = centerPosition.x + RADIUS * Math.cos(angle);
-                const y = centerPosition.y + RADIUS * Math.sin(angle);
+                const PHOTO_SIZE = 50;
+                const rawX = centerPosition.x + RADIUS * Math.cos(angle);
+                const rawY = centerPosition.y + RADIUS * Math.sin(angle);
+                const x = Math.min(Math.max(rawX, PHOTO_SIZE / 2), window.innerWidth - PHOTO_SIZE / 2);
+                const y = Math.min(Math.max(rawY, PHOTO_SIZE / 2), window.innerHeight - PHOTO_SIZE / 2);
                 const color = EMOTION_COLORS[bubble.emotion] ?? GOLD;
 
                 return (
