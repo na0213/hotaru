@@ -152,7 +152,7 @@ export default function Home() {
               className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
               style={{ background: GOLD, color: "#0B1026" }}
             >
-              {(user.user_metadata?.name ?? user.email ?? "U")[0].toUpperCase()}
+              {((user.user_metadata?.name ?? user.email ?? "") || "ゲスト")[0].toUpperCase()}
             </div>
           )}
           <button

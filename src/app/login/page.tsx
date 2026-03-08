@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { signInWithGoogle } from "@/lib/supabase";
+import { signInWithGoogle, supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [guestLoading, setGuestLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleGoogleLogin = async () => {
@@ -17,6 +20,18 @@ export default function LoginPage() {
             setError("ログインに失敗しました。もう一度お試しください。");
             setLoading(false);
         }
+    };
+
+    const handleGuestLogin = async () => {
+        setGuestLoading(true);
+        setError(null);
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) {
+            alert("ゲストログインに失敗しました");
+            setGuestLoading(false);
+            return;
+        }
+        router.push("/");
     };
 
     return (
@@ -113,6 +128,20 @@ export default function LoginPage() {
                         </svg>
                     )}
                     {loading ? "ログイン中..." : "Googleでログイン"}
+                </button>
+
+                {/* ゲストログイン */}
+                <button
+                    onClick={handleGuestLogin}
+                    disabled={guestLoading || loading}
+                    className="flex flex-col items-center gap-1 transition-opacity active:scale-95 disabled:opacity-50"
+                >
+                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
+                        {guestLoading ? "準備中..." : "ゲストとして試す"}
+                    </span>
+                    <span className="text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
+                        ※データは30日後に自動削除されます
+                    </span>
                 </button>
 
                 {error && (
